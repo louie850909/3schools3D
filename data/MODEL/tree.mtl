@@ -1,0 +1,21 @@
+newmtl landscape:lambert4SG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd Grass&Rock.jpg
+Ni 1.00
+newmtl tree6:ast5
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.40 0.40 0.40
+Tf 1.00 1.00 1.00
+map_Kd ast5.png
+Ni 1.00
+newmtl tree6:bark_pine_wh
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.40 0.40 0.40
+Tf 1.00 1.00 1.00
+map_Kd bark_pine_wh.png
+Ni 1.00
