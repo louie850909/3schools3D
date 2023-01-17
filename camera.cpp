@@ -12,6 +12,16 @@
 //*****************************************************************************
 // マクロ定義
 //*****************************************************************************
+#define TITLECAM_POS_X		(-2512.75f)
+#define TITLECAM_POS_Y		(979.59f)
+#define TITLECAM_POS_Z		(-2515.41f)
+#define TITLECAM_AT_X		(-2500.0f)
+#define TITLECAM_AT_Y		(975.84f)
+#define TITLECAM_AT_Z		(-2500.0f)
+#define TITLECAM_ROT_X		(-0.19f)
+#define TITLECAM_ROT_Y		(0.69f)
+#define TITLECAM_ROT_Z		(0.0f)
+
 #define	POS_X_CAM			(0.0f)			// カメラの初期位置(X座標)
 #define	POS_Y_CAM			(50.0f)			// カメラの初期位置(Y座標)
 #define	POS_Z_CAM			(-50.0f)		// カメラの初期位置(Z座標)
@@ -35,17 +45,26 @@ static int				g_ViewPortType = TYPE_FULL_SCREEN;
 //=============================================================================
 void InitCamera(void)
 {
-	g_Camera.pos = { POS_X_CAM, POS_Y_CAM, POS_Z_CAM };
-	g_Camera.at  = { 0.0f, 0.0f, 0.0f };
-	g_Camera.up  = { 0.0f, 1.0f, 0.0f };
-	g_Camera.rot = { -0.34f, -2.16f, 0.0f };
+	switch (GetMode())
+	{
+	case MODE_TITLE:
+		g_Camera.pos = { TITLECAM_POS_X, TITLECAM_POS_Y, TITLECAM_POS_Z };
+		g_Camera.rot = { TITLECAM_ROT_X, TITLECAM_ROT_Y, TITLECAM_ROT_Z };
+		g_Camera.at = { TITLECAM_AT_X, TITLECAM_AT_Y, TITLECAM_AT_Z };
+		g_Camera.up = { 0.0f, 1.0f, 0.0f };
+		break;
+		
+	case MODE_GAME:
+		
+		g_Camera.pos = { POS_X_CAM, POS_Y_CAM, POS_Z_CAM };
+		g_Camera.at = { 0.0f, 0.0f, 0.0f };
+		g_Camera.up = { 0.0f, 1.0f, 0.0f };
+		g_Camera.rot = { -0.34f, -2.16f, 0.0f };
 
-	// 視点と注視点の距離を計算
-	/*float vx, vz;
-	vx = g_Camera.pos.x - g_Camera.at.x;
-	vz = g_Camera.pos.z - g_Camera.at.z;
-	g_Camera.len = sqrtf(vx * vx + vz * vz);*/
-	g_Camera.len = 20.0f; 
+		g_Camera.len = 20.0f;
+		
+		break;
+	}
 	
 	// ビューポートタイプの初期化
 	g_ViewPortType = TYPE_FULL_SCREEN;

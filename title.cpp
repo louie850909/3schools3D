@@ -151,10 +151,10 @@ void UninitTitle(void)
 void UpdateTitle(void)
 {
 	// プレイヤー視点
-	XMFLOAT3 pos = GetPlayer()->pos;
-	//pos.y = 0.0f;			// カメラ酔いを防ぐためにクリアしている
-	SetCameraAT(pos);
-	SetCamera();
+	//XMFLOAT3 pos = GetPlayer()->pos;
+	////pos.y = 0.0f;			// カメラ酔いを防ぐためにクリアしている
+	//SetCameraAT(pos);
+	//SetCamera();
 	
 
 	if (GetKeyboardTrigger(DIK_RETURN))
