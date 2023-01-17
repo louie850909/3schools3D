@@ -342,18 +342,18 @@ void Draw(void)
 
 		// 2Dの物を描画する処理
 		// Z比較なし
-		SetDepthEnable(false);
+		//SetDepthEnable(false);
 
 		// ライティングを無効
-		SetLightEnable(false);
+		//SetLightEnable(false);
 
 		DrawTitle();
 
 		// ライティングを有効に
-		SetLightEnable(true);
+		//SetLightEnable(true);
 
 		// Z比較あり
-		SetDepthEnable(true);
+		//SetDepthEnable(true);
 		break;
 
 	case MODE_TUTORIAL:

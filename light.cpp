@@ -130,7 +130,7 @@ void UpdateLightViewMatrix(int index, LIGHT light)
 		XMVECTOR lookAt = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
 		XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 		LightView = XMMatrixLookAtLH(eyePos, lookAt, up);
-		LightProjection = XMMatrixOrthographicLH(SCREEN_WIDTH * 8, SCREEN_HEIGHT * 8, VIEW_NEAR_Z, VIEW_FAR_Z);
+		LightProjection = XMMatrixOrthographicLH(10000.0f, 10000.0f, VIEW_NEAR_Z, VIEW_FAR_Z * 2);
 
 		lightMatrix.LightView = LightView;
 		lightMatrix.LightProjection = LightProjection;
