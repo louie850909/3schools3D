@@ -12,6 +12,16 @@
 //*****************************************************************************
 // マクロ定義
 //*****************************************************************************
+#define TITLECAM_POS_X		(-2512.75f)
+#define TITLECAM_POS_Y		(979.59f)
+#define TITLECAM_POS_Z		(-2515.41f)
+#define TITLECAM_AT_X		(-2500.0f)
+#define TITLECAM_AT_Y		(975.84f)
+#define TITLECAM_AT_Z		(-2500.0f)
+#define TITLECAM_ROT_X		(-0.19f)
+#define TITLECAM_ROT_Y		(0.69f)
+#define TITLECAM_ROT_Z		(0.0f)
+
 #define	POS_X_CAM			(0.0f)			// カメラの初期位置(X座標)
 #define	POS_Y_CAM			(50.0f)			// カメラの初期位置(Y座標)
 #define	POS_Z_CAM			(-50.0f)		// カメラの初期位置(Z座標)
@@ -35,17 +45,26 @@ static int				g_ViewPortType = TYPE_FULL_SCREEN;
 //=============================================================================
 void InitCamera(void)
 {
-	g_Camera.pos = { POS_X_CAM, POS_Y_CAM, POS_Z_CAM };
-	g_Camera.at  = { 0.0f, 0.0f, 0.0f };
-	g_Camera.up  = { 0.0f, 1.0f, 0.0f };
-	g_Camera.rot = { -0.34f, -2.16f, 0.0f };
+	switch (GetMode())
+	{
+	case MODE_TITLE:
+		g_Camera.pos = { TITLECAM_POS_X, TITLECAM_POS_Y, TITLECAM_POS_Z };
+		g_Camera.rot = { TITLECAM_ROT_X, TITLECAM_ROT_Y, TITLECAM_ROT_Z };
+		g_Camera.at = { TITLECAM_AT_X, TITLECAM_AT_Y, TITLECAM_AT_Z };
+		g_Camera.up = { 0.0f, 1.0f, 0.0f };
+		break;
+		
+	case MODE_GAME:
+		
+		g_Camera.pos = { POS_X_CAM, POS_Y_CAM, POS_Z_CAM };
+		g_Camera.at = { 0.0f, 0.0f, 0.0f };
+		g_Camera.up = { 0.0f, 1.0f, 0.0f };
+		g_Camera.rot = { -0.34f, -2.16f, 0.0f };
 
-	// 視点と注視点の距離を計算
-	/*float vx, vz;
-	vx = g_Camera.pos.x - g_Camera.at.x;
-	vz = g_Camera.pos.z - g_Camera.at.z;
-	g_Camera.len = sqrtf(vx * vx + vz * vz);*/
-	g_Camera.len = 20.0f; 
+		g_Camera.len = 20.0f;
+		
+		break;
+	}
 	
 	// ビューポートタイプの初期化
 	g_ViewPortType = TYPE_FULL_SCREEN;
@@ -66,160 +85,102 @@ void UninitCamera(void)
 //=============================================================================
 void UpdateCamera(void)
 {
+	switch (GetMode())
+	{
+	case MODE_GAME:
+		if (GetKeyboardPress(DIK_RIGHT))
+		{// 視点旋回「左」
+			g_Camera.rot.y += VALUE_ROTATE_CAMERA;
+			if (g_Camera.rot.y > XM_PI)
+			{
+				g_Camera.rot.y -= XM_PI * 2.0f;
+			}
 
-	if (GetKeyboardPress(DIK_RIGHT))
-	{// 視点旋回「左」
-		g_Camera.rot.y += VALUE_ROTATE_CAMERA;
-		if (g_Camera.rot.y > XM_PI)
-		{
-			g_Camera.rot.y -= XM_PI * 2.0f;
+			g_Camera.pos.x = g_Camera.at.x - sinf(g_Camera.rot.y) * g_Camera.len;
+			g_Camera.pos.z = g_Camera.at.z - cosf(g_Camera.rot.y) * g_Camera.len;
 		}
 
-		g_Camera.pos.x = g_Camera.at.x - sinf(g_Camera.rot.y) * g_Camera.len;
-		g_Camera.pos.z = g_Camera.at.z - cosf(g_Camera.rot.y) * g_Camera.len;
-	}
+		if (IsButtonTriggered(0, BUTTON_B))
+		{// 視点旋回「左」
+			g_Camera.rot.y += VALUE_ROTATE_CAMERA;
+			if (g_Camera.rot.y > XM_PI)
+			{
+				g_Camera.rot.y -= XM_PI * 2.0f;
+			}
 
-	if (IsButtonTriggered(0, BUTTON_B))
-	{// 視点旋回「左」
-		g_Camera.rot.y += VALUE_ROTATE_CAMERA;
-		if (g_Camera.rot.y > XM_PI)
-		{
-			g_Camera.rot.y -= XM_PI * 2.0f;
+			g_Camera.pos.x = g_Camera.at.x - sinf(g_Camera.rot.y) * g_Camera.len;
+			g_Camera.pos.z = g_Camera.at.z - cosf(g_Camera.rot.y) * g_Camera.len;
 		}
 
-		g_Camera.pos.x = g_Camera.at.x - sinf(g_Camera.rot.y) * g_Camera.len;
-		g_Camera.pos.z = g_Camera.at.z - cosf(g_Camera.rot.y) * g_Camera.len;
-	}
+		if (GetKeyboardPress(DIK_LEFT))
+		{// 視点旋回「右」
+			g_Camera.rot.y -= VALUE_ROTATE_CAMERA;
+			if (g_Camera.rot.y < -XM_PI)
+			{
+				g_Camera.rot.y += XM_PI * 2.0f;
+			}
 
-	if (GetKeyboardPress(DIK_LEFT))
-	{// 視点旋回「右」
-		g_Camera.rot.y -= VALUE_ROTATE_CAMERA;
-		if (g_Camera.rot.y < -XM_PI)
-		{
-			g_Camera.rot.y += XM_PI * 2.0f;
+			g_Camera.pos.x = g_Camera.at.x - sinf(g_Camera.rot.y) * g_Camera.len;
+			g_Camera.pos.z = g_Camera.at.z - cosf(g_Camera.rot.y) * g_Camera.len;
 		}
 
-		g_Camera.pos.x = g_Camera.at.x - sinf(g_Camera.rot.y) * g_Camera.len;
-		g_Camera.pos.z = g_Camera.at.z - cosf(g_Camera.rot.y) * g_Camera.len;
-	}
+		if (IsButtonTriggered(0, BUTTON_X))
+		{// 視点旋回「右」
+			g_Camera.rot.y -= VALUE_ROTATE_CAMERA;
+			if (g_Camera.rot.y < -XM_PI)
+			{
+				g_Camera.rot.y += XM_PI * 2.0f;
+			}
 
-	if (IsButtonTriggered(0, BUTTON_X))
-	{// 視点旋回「右」
-		g_Camera.rot.y -= VALUE_ROTATE_CAMERA;
-		if (g_Camera.rot.y < -XM_PI)
-		{
-			g_Camera.rot.y += XM_PI * 2.0f;
+			g_Camera.pos.x = g_Camera.at.x - sinf(g_Camera.rot.y) * g_Camera.len;
+			g_Camera.pos.z = g_Camera.at.z - cosf(g_Camera.rot.y) * g_Camera.len;
 		}
 
-		g_Camera.pos.x = g_Camera.at.x - sinf(g_Camera.rot.y) * g_Camera.len;
-		g_Camera.pos.z = g_Camera.at.z - cosf(g_Camera.rot.y) * g_Camera.len;
-	}
+		if (GetKeyboardPress(DIK_UP))
+		{// 視点旋回「上」
+			g_Camera.rot.x += VALUE_ROTATE_CAMERA;
+			if (g_Camera.rot.x > XM_PI / 2)
+			{
+				g_Camera.rot.x = XM_PI / 2;
+			}
 
-	if (GetKeyboardPress(DIK_UP))
-	{// 視点旋回「上」
-		g_Camera.rot.x += VALUE_ROTATE_CAMERA;
-		if (g_Camera.rot.x > XM_PI/2)
-		{
-			g_Camera.rot.x = XM_PI/2;
+			g_Camera.pos.y = g_Camera.at.y - sinf(g_Camera.rot.x) * g_Camera.len;
 		}
 
-		g_Camera.pos.y = g_Camera.at.y - sinf(g_Camera.rot.x) * g_Camera.len;
-	}
+		if (IsButtonTriggered(0, BUTTON_Y))
+		{// 視点旋回「上」
+			g_Camera.rot.x += VALUE_ROTATE_CAMERA;
+			if (g_Camera.rot.x > XM_PI / 2)
+			{
+				g_Camera.rot.x = XM_PI / 2;
+			}
 
-	if (IsButtonTriggered(0, BUTTON_Y))
-	{// 視点旋回「上」
-		g_Camera.rot.x += VALUE_ROTATE_CAMERA;
-		if (g_Camera.rot.x > XM_PI / 2)
-		{
-			g_Camera.rot.x = XM_PI / 2;
+			g_Camera.pos.y = g_Camera.at.y - sinf(g_Camera.rot.x) * g_Camera.len;
 		}
 
-		g_Camera.pos.y = g_Camera.at.y - sinf(g_Camera.rot.x) * g_Camera.len;
-	}
+		if (GetKeyboardPress(DIK_DOWN))
+		{// 視点旋回「下」
+			g_Camera.rot.x -= VALUE_ROTATE_CAMERA;
+			if (g_Camera.rot.x < -XM_PI / 2)
+			{
+				g_Camera.rot.x = -XM_PI / 2;
+			}
 
-	if (GetKeyboardPress(DIK_DOWN))
-	{// 視点旋回「下」
-		g_Camera.rot.x -= VALUE_ROTATE_CAMERA;
-		if (g_Camera.rot.x < -XM_PI/2)
-		{
-			g_Camera.rot.x = -XM_PI/2;
+			g_Camera.pos.y = g_Camera.at.y - sinf(g_Camera.rot.x) * g_Camera.len;
 		}
 
-		g_Camera.pos.y = g_Camera.at.y - sinf(g_Camera.rot.x) * g_Camera.len;
-	}
+		if (IsButtonTriggered(0, BUTTON_A))
+		{// 視点旋回「下」
+			g_Camera.rot.x -= VALUE_ROTATE_CAMERA;
+			if (g_Camera.rot.x < -XM_PI / 2)
+			{
+				g_Camera.rot.x = -XM_PI / 2;
+			}
 
-	if (IsButtonTriggered(0, BUTTON_A))
-	{// 視点旋回「下」
-		g_Camera.rot.x -= VALUE_ROTATE_CAMERA;
-		if (g_Camera.rot.x < -XM_PI / 2)
-		{
-			g_Camera.rot.x = -XM_PI / 2;
+			g_Camera.pos.y = g_Camera.at.y - sinf(g_Camera.rot.x) * g_Camera.len;
 		}
-
-		g_Camera.pos.y = g_Camera.at.y - sinf(g_Camera.rot.x) * g_Camera.len;
+		break;
 	}
-
-	//if (GetKeyboardPress(DIK_Y))
-	//{// 視点移動「上」
-	//	g_Camera.pos.y += VALUE_MOVE_CAMERA;
-	//}
-
-	//if (GetKeyboardPress(DIK_N))
-	//{// 視点移動「下」
-	//	g_Camera.pos.y -= VALUE_MOVE_CAMERA;
-	//}
-
-	//if (GetKeyboardPress(DIK_Q))
-	//{// 注視点旋回「左」
-	//	g_Camera.rot.y -= VALUE_ROTATE_CAMERA;
-	//	if (g_Camera.rot.y < -XM_PI)
-	//	{
-	//		g_Camera.rot.y += XM_PI * 2.0f;
-	//	}
-
-	//	g_Camera.at.x = g_Camera.pos.x + sinf(g_Camera.rot.y) * g_Camera.len;
-	//	g_Camera.at.z = g_Camera.pos.z + cosf(g_Camera.rot.y) * g_Camera.len;
-	//}
-
-	//if (GetKeyboardPress(DIK_E))
-	//{// 注視点旋回「右」
-	//	g_Camera.rot.y += VALUE_ROTATE_CAMERA;
-	//	if (g_Camera.rot.y > XM_PI)
-	//	{
-	//		g_Camera.rot.y -= XM_PI * 2.0f;
-	//	}
-
-	//	g_Camera.at.x = g_Camera.pos.x + sinf(g_Camera.rot.y) * g_Camera.len;
-	//	g_Camera.at.z = g_Camera.pos.z + cosf(g_Camera.rot.y) * g_Camera.len;
-	//}
-
-	//if (GetKeyboardPress(DIK_T))
-	//{// 注視点移動「上」
-	//	g_Camera.at.y += VALUE_MOVE_CAMERA;
-	//}
-
-	//if (GetKeyboardPress(DIK_B))
-	//{// 注視点移動「下」
-	//	g_Camera.at.y -= VALUE_MOVE_CAMERA;
-	//}
-
-	//if (GetKeyboardPress(DIK_U))
-	//{// 近づく
-	//	g_Camera.len -= VALUE_MOVE_CAMERA;
-	//	if (g_Camera.len <= 0.0f)
-	//	{
-	//		g_Camera.len = 0.1f;
-	//	}
-	//	g_Camera.pos.x = g_Camera.at.x - sinf(g_Camera.rot.y) * g_Camera.len;
-	//	g_Camera.pos.z = g_Camera.at.z - cosf(g_Camera.rot.y) * g_Camera.len;
-	//}
-
-	//if (GetKeyboardPress(DIK_M))
-	//{// 離れる
-	//	g_Camera.len += VALUE_MOVE_CAMERA;
-	//	g_Camera.pos.x = g_Camera.at.x - sinf(g_Camera.rot.y) * g_Camera.len;
-	//	g_Camera.pos.z = g_Camera.at.z - cosf(g_Camera.rot.y) * g_Camera.len;
-	//}
 
 #ifdef _DEBUG
 	// カメラを初期に戻す

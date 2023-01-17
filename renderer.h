@@ -156,3 +156,4 @@ void SetDefaultRenderTarget(void);
 void SetShadowMapRenderTarget(void);
 void SetShadowMapTexture(void);
 
+void SetTime(float time);

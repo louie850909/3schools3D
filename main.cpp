@@ -53,6 +53,7 @@ char	g_DebugStr[2048] = WINDOW_NAME;		// デバッグ文字表示用
 #endif
 
 int g_Mode = MODE_TITLE;					// 起動時の画面を設定
+static float g_time = 0.0f;
 
 //=============================================================================
 // メイン関数
@@ -298,6 +299,10 @@ void Update(void)
 	// カメラ更新
 	UpdateCamera();
 
+	// 時間更新
+	g_time += 0.01f;
+	SetTime(g_time);
+
 	// モードによって処理を分ける
 	switch (g_Mode)
 	{
@@ -342,18 +347,18 @@ void Draw(void)
 
 		// 2Dの物を描画する処理
 		// Z比較なし
-		SetDepthEnable(false);
+		//SetDepthEnable(false);
 
 		// ライティングを無効
-		SetLightEnable(false);
+		//SetLightEnable(false);
 
 		DrawTitle();
 
 		// ライティングを有効に
-		SetLightEnable(true);
+		//SetLightEnable(true);
 
 		// Z比較あり
-		SetDepthEnable(true);
+		//SetDepthEnable(true);
 		break;
 
 	case MODE_TUTORIAL:

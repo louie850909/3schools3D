@@ -117,6 +117,8 @@ struct PSOUTPUT
 // 大気描画
 //*****************************************************************************
 #define PI 3.1415926535897932384626433832795
+Texture2D g_Texture : register(t0);
+SamplerState g_SamplerState : register(s0);
 
 float Scale(float fcos)
 {
@@ -136,6 +138,19 @@ float3 IntersectionPos(float3 dir, float3 a, float radius)
 
 PSOUTPUT SKY(PSINPUT input)
 {
+    float4 star;
+    if (Material.noTexSampling == 0)
+    {
+        star = g_Texture.Sample(g_SamplerState, input.TexCoord);
+
+        star *= input.Diffuse;
+    }
+    else
+    {
+        star = input.Diffuse;
+    }
+    star = star * Material.Diffuse;
+        
     static const float innerRadius = 10000.0f;
     static const float outerRadius = 10250.0f;
     static const float Kr = 0.0025f; // Rayleighの散乱係数
@@ -202,8 +217,14 @@ PSOUTPUT SKY(PSINPUT input)
     float rayleighPhase = 0.75 * (1.0 + fCos2);
     float miePhase = 1.5 * ((1.0 - g2) / (2.0 + g2)) * (1.0 + fCos2) / pow(1.0 + g2 - 2.0 * g * fCos, 1.5);
     
+    float3 sky = c0 * rayleighPhase + c1 * miePhase;
+    
+    // Lightの位置が低くになると、星が見えるようにする
+    // Lightの位置が高くになると、星がだんだん透明にする
+    star.a = saturate((-Light.Position[0].y + 1000.0f) / 2000.0f);
+    
     PSOUTPUT output;
     output.Diffuse = 1.0f;
-    output.Diffuse.rgb = c0 * rayleighPhase + c1 * miePhase;
+    output.Diffuse.rgb = sky * (1.0f - star.a) + star.rgb * star.a;
     return output;
 }

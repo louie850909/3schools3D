@@ -12,7 +12,18 @@
 //*****************************************************************************
 // マクロ定義
 //*****************************************************************************
-
+#define LIGHT_SUNRISE_POS_X		(5000.3f)		// 日の出のX位置
+#define LIGHT_SUNRISE_POS_Y		(-869.3f)		// 日の出のY位置
+#define LIGHT_SUNRISE_POS_Z		(0.0f)			// 日の出のZ位置
+#define LIGHT_SUNSET_POS_X		(-2245.3f)		// 日の入りのX位置
+#define LIGHT_SUNSET_POS_Y		(-869.3f)		// 日の入りのY位置
+#define LIGHT_SUNSET_POS_Z		(5000.0f)		// 日の入りのZ位置
+#define LIGHT_NOON_POS_X		(1377.35f)		// 昼のX位置
+#define LIGHT_NOON_POS_Y		(5000.0f)		// 昼のY位置
+#define LIGHT_NOON_POS_Z		(2500.0f)		// 昼のZ位置
+#define LIGHT_MIDNINGT_POS_X	(1377.35f)		// 夜のX位置
+#define LIGHT_MIDNINGT_POS_Y	(-5000.0f)		// 夜のY位置
+#define LIGHT_MIDNINGT_POS_Z	(2500.0f)		// 夜のZ位置
 
 
 //*****************************************************************************
@@ -50,7 +61,7 @@ void InitLight(void)
 	}
 
 	// 並行光源の設定（世界を照らす光）
-	g_Light[0].Position = XMFLOAT3(1379.0f, 2000.0f, 1826.0f);
+	g_Light[0].Position = XMFLOAT3(LIGHT_NOON_POS_X, LIGHT_NOON_POS_Y, LIGHT_NOON_POS_Z);
 	g_Light[0].Direction = XMFLOAT3(0 - g_Light[0].Position.x, 0 - g_Light[0].Position.y, 0 - g_Light[0].Position.z);		// 光の向き
 	g_Light[0].Diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);	// 光の色
 	g_Light[0].Type = LIGHT_TYPE_DIRECTIONAL;					// 並行光源
@@ -62,7 +73,7 @@ void InitLight(void)
 	// フォグの初期化（霧の効果）
 	g_Fog.FogStart = 1000.0f;									// 視点からこの距離離れるとフォグがかかり始める
 	g_Fog.FogEnd   = 10000.0f;									// ここまで離れるとフォグの色で見えなくなる
-	g_Fog.FogColor = XMFLOAT4( 0.9f, 0.9f, 0.9f, 1.0f );		// フォグの色
+	g_Fog.FogColor = XMFLOAT4( 1.0f, 1.0f, 1.0f, 1.0f );		// フォグの色
 	SetFog(&g_Fog);
 	SetFogEnable(g_FogEnable);		// 他の場所もチェックする shadow
 
@@ -130,7 +141,7 @@ void UpdateLightViewMatrix(int index, LIGHT light)
 		XMVECTOR lookAt = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
 		XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 		LightView = XMMatrixLookAtLH(eyePos, lookAt, up);
-		LightProjection = XMMatrixOrthographicLH(SCREEN_WIDTH * 8, SCREEN_HEIGHT * 8, VIEW_NEAR_Z, VIEW_FAR_Z);
+		LightProjection = XMMatrixOrthographicLH(10000.0f, 10000.0f, VIEW_NEAR_Z, VIEW_FAR_Z * 2);
 
 		lightMatrix.LightView = LightView;
 		lightMatrix.LightProjection = LightProjection;
