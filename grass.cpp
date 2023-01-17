@@ -288,7 +288,7 @@ void DrawGrass(void)
 	}
 
 	// ライティングを無効
-	SetLightEnable(false);
+	//SetLightEnable(false);
 	SetShaderMode(SHADER_MODE_GRASS);
 
 	// 頂点バッファ設定
@@ -320,7 +320,7 @@ void DrawGrass(void)
 
 
 	// ライティングを有効に
-	SetLightEnable(true);
+	//SetLightEnable(true);
 
 	// αテストを無効に
 	SetAlphaTestEnable(false);
@@ -419,6 +419,12 @@ HRESULT MakeVertexGrass(void)
 	vertex[1].Diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	vertex[2].Diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	vertex[3].Diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+
+	// 法線の設定
+	vertex[0].Normal = XMFLOAT3(0.0f, 1.0f, 0.0f);
+	vertex[1].Normal = XMFLOAT3(0.0f, 1.0f, 0.0f);
+	vertex[2].Normal = XMFLOAT3(0.0f, 1.0f, 0.0f);
+	vertex[3].Normal = XMFLOAT3(0.0f, 1.0f, 0.0f);
 
 	// テクスチャ座標の設定
 	vertex[0].TexCoord = XMFLOAT2(0.0f, 0.0f);

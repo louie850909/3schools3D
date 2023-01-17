@@ -50,6 +50,7 @@ enum SHADER_MODE
 	SHADER_MODE_SHADOW_MAP,			//シャドウマップ生成
 	SHADER_MODE_SHADOW_MAP_INST,	//シャドウマップ生成(インスタンシング)
 	SHADER_MODE_SHADOW_MAP_GRASS, 	//シャドウマップ生成(草)
+	SHADER_MODE_SKY, 				//スカイシェーダー
 
 	SHADER_MODE_NUM
 };

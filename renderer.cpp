@@ -108,6 +108,7 @@ static ID3D11VertexShader*		g_VertexShaderShadowMapInst = NULL;
 static ID3D11VertexShader*		g_VertexShaderShadowMapGrass = NULL;
 static ID3D11PixelShader*		g_PixelShader = NULL;
 static ID3D11PixelShader*		g_PixelShaderShadowMap = NULL;
+static ID3D11PixelShader*		g_PixelShaderSky = NULL;
 static ID3D11InputLayout*		g_VertexLayout = NULL;
 static ID3D11InputLayout*		g_VertexLayoutInst = NULL;
 static ID3D11InputLayout*		g_VertexLayoutGrass = NULL;
@@ -446,6 +447,15 @@ void SetShaderMode(int mode)
 		g_ImmediateContext->PSSetShader(g_PixelShaderShadowMap, NULL, 0);
 
 		break;
+
+	case SHADER_MODE_SKY:
+		// 入力レイアウト設定
+		g_ImmediateContext->IASetInputLayout(g_VertexLayout);
+
+		g_ImmediateContext->VSSetShader(g_VertexShader, NULL, 0);
+		g_ImmediateContext->PSSetShader(g_PixelShaderSky, NULL, 0);
+
+		break;
 	}
 }
 
@@ -471,6 +481,8 @@ void SetDefaultRenderTarget()
 void SetShadowMapRenderTarget(void)
 {
 	float clearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	ID3D11ShaderResourceView* null[] = { nullptr, nullptr };
+	g_ImmediateContext->PSSetShaderResources(1, 1, null);
 
 	// レンダーターゲットを設定する
 	ID3D11RenderTargetView* pRTV[1] = { 0 };
@@ -986,6 +998,18 @@ HRESULT InitRenderer(HINSTANCE hInstance, HWND hWnd, BOOL bWindow)
 		pPSBlob->Release();
 	}
 
+	// シャドウマップピクセルシェーダ
+	{
+		hr = D3DX11CompileFromFile("sky.hlsl", NULL, NULL, "SKY", "ps_4_0", shFlag, 0, NULL, &pPSBlob, &pErrorBlob, NULL);
+		if (FAILED(hr))
+		{
+			MessageBox(NULL, (char*)pErrorBlob->GetBufferPointer(), "PS", MB_OK | MB_ICONERROR);
+		}
+
+		g_D3DDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), NULL, &g_PixelShaderSky);
+
+		pPSBlob->Release();
+	}
 
 	// 定数バッファ生成
 	D3D11_BUFFER_DESC hBufferDesc;

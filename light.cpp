@@ -7,6 +7,7 @@
 #include "main.h"
 #include "renderer.h"
 #include "camera.h"
+#include "light.h"
 
 //*****************************************************************************
 // ƒ}ƒNƒ’è‹`
