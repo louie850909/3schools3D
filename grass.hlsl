@@ -92,6 +92,11 @@ cbuffer LightMatrixBuffer : register(b8)
     LIGHTMATRIX LightMatrix;
 }
 
+cbuffer TimeBuffer : register(b9)
+{
+    float4 Time;
+}
+
 //=============================================================================
 // インスタンシンVSシェーダ
 //=============================================================================
@@ -135,7 +140,18 @@ void VertexShaderInstancing(in float4 inPosition : POSITION0,
     wd = mul(wd, trans);
     wvp = mul(wd, View);
     wvp = mul(wvp, Projection);
-    outPosition = mul(inPosition, wvp);
+    // xz bias for grass wave
+    float x = sin(Time.x + inInstancePos.x) * 2.0f;
+    float z = sin(Time.x + inInstancePos.x) * 2.0f;
+    
+    if (inTexCoord.y == 0.0f)
+    {
+        outPosition = mul(float4(inPosition.x + x, inPosition.y, inPosition.z + z, 1.0f), wvp);
+    }
+    else
+    {
+        outPosition = mul(inPosition, wvp);
+    }
 	
     outNormal = normalize(mul(float4(inNormal.xyz, 0.0f), wd));
 

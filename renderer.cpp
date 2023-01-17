@@ -124,6 +124,7 @@ static ID3D11Buffer*			g_FogBuffer = NULL;
 static ID3D11Buffer*			g_FuchiBuffer = NULL;
 static ID3D11Buffer*			g_CameraBuffer = NULL;
 static ID3D11Buffer*			g_LightMatrixBuffer = NULL;
+static ID3D11Buffer*			g_TimeBuffer = NULL;
 
 static ID3D11DepthStencilState* g_DepthStateEnable;
 static ID3D11DepthStencilState* g_DepthStateDisable;
@@ -498,7 +499,11 @@ void SetShadowMapTexture(void)
 	g_ImmediateContext->PSSetShaderResources(1, 1, &g_ShadowMapSRV);
 }
 
-
+void SetTime(float time)
+{
+	XMFLOAT4 tmp = XMFLOAT4(time, 0.0f, 0.0f, 0.0f);
+	GetDeviceContext()->UpdateSubresource(g_TimeBuffer, 0, NULL, &tmp, 0, 0);
+}
 
 //=============================================================================
 // 初期化処理
@@ -1070,7 +1075,12 @@ HRESULT InitRenderer(HINSTANCE hInstance, HWND hWnd, BOOL bWindow)
 	g_D3DDevice->CreateBuffer(&hBufferDesc, NULL, &g_LightMatrixBuffer);
 	g_ImmediateContext->VSSetConstantBuffers(8, 1, &g_LightMatrixBuffer);
 	g_ImmediateContext->PSSetConstantBuffers(8, 1, &g_LightMatrixBuffer);
-
+	
+	//時間
+	hBufferDesc.ByteWidth = sizeof(XMFLOAT4);
+	g_D3DDevice->CreateBuffer(&hBufferDesc, NULL, &g_TimeBuffer);
+	g_ImmediateContext->VSSetConstantBuffers(9, 1, &g_TimeBuffer);
+	g_ImmediateContext->PSSetConstantBuffers(9, 1, &g_TimeBuffer);
 
 	// 入力レイアウト設定
 	g_ImmediateContext->IASetInputLayout( g_VertexLayout );
@@ -1124,6 +1134,7 @@ void UninitRenderer(void)
 	if (g_FuchiBuffer)			g_FuchiBuffer->Release();
 	if (g_CameraBuffer)			g_CameraBuffer->Release();
 	if (g_LightMatrixBuffer)	g_LightMatrixBuffer->Release();
+	if (g_TimeBuffer)			g_TimeBuffer->Release();
 
 	if (g_VertexLayout)					g_VertexLayout->Release();
 	if (g_VertexLayoutGrass)			g_VertexLayoutGrass->Release();

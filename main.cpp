@@ -53,6 +53,7 @@ char	g_DebugStr[2048] = WINDOW_NAME;		// デバッグ文字表示用
 #endif
 
 int g_Mode = MODE_TITLE;					// 起動時の画面を設定
+static float g_time = 0.0f;
 
 //=============================================================================
 // メイン関数
@@ -297,6 +298,10 @@ void Update(void)
 
 	// カメラ更新
 	UpdateCamera();
+
+	// 時間更新
+	g_time += 0.01f;
+	SetTime(g_time);
 
 	// モードによって処理を分ける
 	switch (g_Mode)
