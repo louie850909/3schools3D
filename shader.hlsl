@@ -267,7 +267,7 @@ PSOUTPUT PixelShaderPolygon(PSINPUT input )
 	}
 	
 	// ‰e
-    if (Light.Enable == 1)
+    if (Light.Enable == 1 && Light.Position[0].y >= -200.0f)
     {
         float bias = 0.0001f;
         float2 shadowTexCoord;
