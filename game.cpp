@@ -203,6 +203,8 @@ void UpdateGame(void)
 	// ‰e‚ÌXVˆ—
 	UpdateShadow();
 
+	UpdateSkyBall();
+
 	// “–‚½‚è”»’èˆ—
 	CheckHit();
 
