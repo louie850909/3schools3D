@@ -22,8 +22,8 @@
 //*****************************************************************************
 #define TEXTURE_MAX			(1)				// テクスチャの種類数
 
-#define	GRASS_WIDTH			(10.0f)			// 頂点サイズ
-#define	GRASS_HEIGHT		(10.0f)			// 頂点サイズ
+#define	GRASS_WIDTH			(20.0f)			// 頂点サイズ
+#define	GRASS_HEIGHT		(20.0f)			// 頂点サイズ
 
 #define GRASS_POS_MIN		(-2500.0f)		// 生成位置最小値
 #define GRASS_POS_MAX		(2500.0f)			// 生成位置最大値
@@ -280,12 +280,7 @@ void UpdateGrass(void)
 //=============================================================================
 void DrawGrass(void)
 {
-	// αテスト設定
-	if (g_bAlpaTest == true)
-	{
-		// αテストを有効に
-		SetAlphaTestEnable(true);
-	}
+	SetAlphaTestEnable(true);
 
 	// ライティングを無効
 	//SetLightEnable(false);
