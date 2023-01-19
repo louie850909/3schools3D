@@ -110,6 +110,7 @@ HRESULT InitTitle(void)
 	InitTree();
 	InitGrass();
 	InitSkyBall();
+	InitCamera();
 	
 	return S_OK;
 }

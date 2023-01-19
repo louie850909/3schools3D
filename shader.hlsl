@@ -267,7 +267,7 @@ PSOUTPUT PixelShaderPolygon(PSINPUT input )
 	}
 	
 	// ‰e
-    if (Light.Enable == 1 && Light.Position[0].y >= -200.0f)
+    if (Light.Enable == 1)
     {
         float bias = 0.01f;
         float2 shadowTexCoord;
@@ -290,6 +290,10 @@ PSOUTPUT PixelShaderPolygon(PSINPUT input )
             output.Diffuse.rgb = lerp(output.Diffuse.rgb, shadowcolor, shadow);
         }
     }
+    //else if (Light.Enable == 1 && Light.Position[0].y < 50.0f)
+    //{
+    //    output.Diffuse.rgb *= 0.5f;
+    //}
 	
     return output;
 }
