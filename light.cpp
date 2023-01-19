@@ -75,6 +75,7 @@ XMFLOAT3 MidnightToRise = XMFLOAT3((LIGHT_SUNRISE_POS_X - LIGHT_MIDNINGT_POS_X) 
 //=============================================================================
 void InitLight(void)
 {
+	static float	g_time = -1;
 
 	//ÉâÉCÉgèâä˙âª
 	for (int i = 0; i < LIGHT_MAX; i++)
@@ -121,9 +122,9 @@ void UpdateLight(void)
 	case SUNRISE:
 		if (g_time < SUN_MOVING_TIME)
 		{
-			g_Light[0].Position.x += RiseToNoon.x;
-			g_Light[0].Position.y += RiseToNoon.y;
-			g_Light[0].Position.z += RiseToNoon.z;
+			g_Light[0].Position.x = LIGHT_SUNRISE_POS_X + g_time * RiseToNoon.x;
+			g_Light[0].Position.y = LIGHT_SUNRISE_POS_Y + g_time * RiseToNoon.y;
+			g_Light[0].Position.z = LIGHT_SUNRISE_POS_Z + g_time * RiseToNoon.z;
 			
 			g_Fog.FogColor.x += 1.0f / SUN_MOVING_TIME;
 			g_Fog.FogColor.y += 1.0f / SUN_MOVING_TIME;
@@ -139,9 +140,9 @@ void UpdateLight(void)
 	case NOON:
 		if (g_time < SUN_MOVING_TIME)
 		{
-			g_Light[0].Position.x += NoonToSet.x;
-			g_Light[0].Position.y += NoonToSet.y;
-			g_Light[0].Position.z += NoonToSet.z;
+			g_Light[0].Position.x = LIGHT_NOON_POS_X + g_time * NoonToSet.x;
+			g_Light[0].Position.y = LIGHT_NOON_POS_Y + g_time * NoonToSet.y;
+			g_Light[0].Position.z = LIGHT_NOON_POS_Z + g_time * NoonToSet.z;
 
 			g_Fog.FogColor.x -= 1.0f / SUN_MOVING_TIME;
 			g_Fog.FogColor.y -= 1.0f / SUN_MOVING_TIME;
@@ -157,9 +158,9 @@ void UpdateLight(void)
 	case SUNSET:
 		if (g_time < SUN_MOVING_TIME)
 		{
-			g_Light[0].Position.x += SetToMidnight.x;
-			g_Light[0].Position.y += SetToMidnight.y;
-			g_Light[0].Position.z += SetToMidnight.z;
+			g_Light[0].Position.x = LIGHT_SUNSET_POS_X + g_time * SetToMidnight.x;
+			g_Light[0].Position.y = LIGHT_SUNSET_POS_Y + g_time * SetToMidnight.y;
+			g_Light[0].Position.z = LIGHT_SUNSET_POS_Z + g_time * SetToMidnight.z;
 		}
 		else
 		{
@@ -171,9 +172,9 @@ void UpdateLight(void)
 	case MIDNIGHT:
 		if (g_time < SUN_MOVING_TIME)
 		{
-			g_Light[0].Position.x += MidnightToRise.x;
-			g_Light[0].Position.y += MidnightToRise.y;
-			g_Light[0].Position.z += MidnightToRise.z;
+			g_Light[0].Position.x = LIGHT_MIDNINGT_POS_X + g_time * MidnightToRise.x;
+			g_Light[0].Position.y = LIGHT_MIDNINGT_POS_Y + g_time * MidnightToRise.y;
+			g_Light[0].Position.z = LIGHT_MIDNINGT_POS_Z + g_time * MidnightToRise.z;
 		}
 		else
 		{
