@@ -61,3 +61,4 @@ void SetViewPort(int type);
 int GetViewPortType(void);
 
 void SetCameraAT(XMFLOAT3 pos);
+void SetCameraPosAtRot(XMFLOAT3 pos, XMFLOAT3 at, XMFLOAT3 rot);

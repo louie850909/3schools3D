@@ -320,3 +320,12 @@ void SetCameraAT(XMFLOAT3 pos)
 	g_Camera.pos.y = g_Camera.at.y - sinf(g_Camera.rot.x) * g_Camera.len;
 }
 
+void SetCameraPosAtRot(XMFLOAT3 pos, XMFLOAT3 at, XMFLOAT3 rot)
+{
+	g_Camera.pos = pos;
+	g_Camera.at = at;
+	g_Camera.rot = rot;
+}
+
+
+
