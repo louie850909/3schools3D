@@ -23,7 +23,7 @@ void DrawShadowMap()
 
 	DrawStage();
 	DrawTreeShadowMap();
-	DrawGrassShadowMap();
+	//DrawGrassShadowMap();
 	
 	
 	// レンダーターゲットを戻す

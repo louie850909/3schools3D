@@ -164,7 +164,7 @@ PSINPUT VertexShaderPolygon( VSINPUT input)
 Texture2D		g_Texture : register(t0);
 Texture2D		g_TexDepth : register(t1);
 SamplerState	g_SamplerState : register( s0 );
-SamplerState g_SamplerStateClamp : register(s1);
+SamplerComparisonState	 g_SamplerStatePCF : register(s1);
 
 
 //=============================================================================
@@ -267,30 +267,33 @@ PSOUTPUT PixelShaderPolygon(PSINPUT input )
 	}
 	
 	// ‰e
-    if (Light.Enable == 1 && Light.Position[0].y >= -200.0f)
+    if (Light.Enable == 1)
     {
-        float bias = 0.0001f;
+        float bias = 0.01f;
         float2 shadowTexCoord;
         float shadowMapDepth;
         float depth;
 		
-        float shadowMapSizeX = 1024.0f * 5.0f;
-        float shadowMapSizeY = 1024.0f * 5.0f;
-		
         shadowTexCoord = input.LightPos.xy / input.LightPos.w;
         shadowTexCoord = shadowTexCoord * float2(0.5f, -0.5f) + 0.5;
+        depth = input.LightPos.z / input.LightPos.w;
+		
+		// PCF
+        float shadow = 0.0f;
 		
         if (saturate(shadowTexCoord.x) == shadowTexCoord.x && saturate(shadowTexCoord.y) == shadowTexCoord.y)
         {
-            shadowMapDepth = g_TexDepth.Sample(g_SamplerState, shadowTexCoord).r;
-            depth = input.LightPos.z / input.LightPos.w;
+            shadowMapDepth = g_TexDepth.SampleCmpLevelZero(g_SamplerStatePCF, shadowTexCoord, depth);
+            shadow += (depth - bias > shadowMapDepth) ? 1.0f : 0.0f;
 			
-            if (shadowMapDepth + bias < depth)
-            {
-                output.Diffuse.rgb *= 0.5f;
-            }
+            float3 shadowcolor = output.Diffuse.rgb * 0.5f;
+            output.Diffuse.rgb = lerp(output.Diffuse.rgb, shadowcolor, shadow);
         }
     }
+    //else if (Light.Enable == 1 && Light.Position[0].y < 50.0f)
+    //{
+    //    output.Diffuse.rgb *= 0.5f;
+    //}
 	
     return output;
 }

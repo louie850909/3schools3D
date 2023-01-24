@@ -666,13 +666,16 @@ HRESULT InitRenderer(HINSTANCE hInstance, HWND hWnd, BOOL bWindow)
 	g_ImmediateContext->RSSetViewports(1, &g_Viewport);
 
 	// ラスタライザステート作成
-	D3D11_RASTERIZER_DESC rd; 
-	ZeroMemory( &rd, sizeof( rd ) );
+	D3D11_RASTERIZER_DESC rd;
+	ZeroMemory(&rd, sizeof(rd));
 	rd.FillMode = D3D11_FILL_SOLID;
-	rd.CullMode = D3D11_CULL_NONE; 
-	rd.DepthClipEnable = TRUE; 
-	rd.MultisampleEnable = FALSE; 
-	g_D3DDevice->CreateRasterizerState( &rd, &g_RasterStateCullOff);
+	rd.CullMode = D3D11_CULL_NONE;
+	rd.DepthClipEnable = TRUE;
+	rd.MultisampleEnable = FALSE;
+	rd.DepthBias = 0;
+	rd.DepthBiasClamp = 0.0f;
+	rd.SlopeScaledDepthBias = 1.0f;
+	g_D3DDevice->CreateRasterizerState(&rd, &g_RasterStateCullOff);
 
 	rd.CullMode = D3D11_CULL_FRONT;
 	g_D3DDevice->CreateRasterizerState(&rd, &g_RasterStateCullCW);
@@ -771,9 +774,9 @@ HRESULT InitRenderer(HINSTANCE hInstance, HWND hWnd, BOOL bWindow)
 	ID3D11SamplerState* samplerStateClamp = NULL;
 	samplerDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
 	samplerDesc.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
-	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_MIRROR;
-	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_MIRROR;
-	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_MIRROR;
+	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
 	g_D3DDevice->CreateSamplerState(&samplerDesc, &samplerStateClamp);
 
 	g_ImmediateContext->PSSetSamplers( 0, 1, &samplerState );
