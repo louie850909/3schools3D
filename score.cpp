@@ -52,8 +52,6 @@ static BOOL						g_Load = FALSE;
 //=============================================================================
 HRESULT InitScore(void)
 {
-	ID3D11Device *pDevice = GetDevice();
-
 	//テクスチャ生成
 	for (int i = 0; i < TEXTURE_MAX; i++)
 	{

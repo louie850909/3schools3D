@@ -152,11 +152,13 @@
     <ClCompile Include="file.cpp" />
     <ClCompile Include="game.cpp" />
     <ClCompile Include="grass.cpp" />
+    <ClCompile Include="icon.cpp" />
     <ClCompile Include="input.cpp" />
     <ClCompile Include="light.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="meshfield.cpp" />
     <ClCompile Include="meshwall.cpp" />
+    <ClCompile Include="minimap.cpp" />
     <ClCompile Include="model.cpp" />
     <ClCompile Include="particle.cpp" />
     <ClCompile Include="player.cpp" />
@@ -183,11 +185,13 @@
     <ClInclude Include="file.h" />
     <ClInclude Include="game.h" />
     <ClInclude Include="grass.h" />
+    <ClInclude Include="icon.h" />
     <ClInclude Include="input.h" />
     <ClInclude Include="light.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="meshfield.h" />
     <ClInclude Include="meshwall.h" />
+    <ClInclude Include="minimap.h" />
     <ClInclude Include="model.h" />
     <ClInclude Include="particle.h" />
     <ClInclude Include="player.h" />
