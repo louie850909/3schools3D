@@ -259,6 +259,8 @@ void DrawTree(void)
 
 	// ƒ¿ƒeƒXƒg‚ð–³Œø‚É
 	SetAlphaTestEnable(false);
+
+	SetShaderMode(SHADER_MODE_DEFAULT);
 }
 
 void DrawTreeShadowMap(void)

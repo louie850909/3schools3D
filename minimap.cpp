@@ -3,6 +3,8 @@
 #include "player.h"
 #include "stage.h"
 #include "sprite.h"
+#include "tree.h"
+#include "icon.h"
 
 static ID3D11Texture2D*				g_MiniMap = NULL;
 static ID3D11Texture2D*				g_MiniMapDS = NULL;
@@ -82,6 +84,8 @@ void InitMiniMap()
 	GetDevice()->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), NULL, &g_PixelShaderMiniMap);
 
 	pPSBlob->Release();
+	
+	InitIcon();
 }
 
 void UninitMiniMap()
@@ -121,10 +125,13 @@ void UninitMiniMap()
 		g_MiniMap->Release();
 		g_MiniMap = NULL;
 	}
+
+	UninitIcon();
 }
 
 void UpdateMiniMap()
 {
+	UpdateIcon();
 }
 
 void DrawMiniMap()
@@ -143,7 +150,7 @@ void DrawMiniMap()
 	// プリミティブトポロジ設定
 	GetDeviceContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 	
-	SetSpriteColor(g_VertexBuffer, 700.0f, 300.0f, 128.0f, 128.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+	SetSpriteColor(g_VertexBuffer, 800.0f, 400.0f, 256.0f, 256.0f, 0.0f, 0.0f, 1.0f, 1.0f,
 		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 
 	GetDeviceContext()->Draw(4, 0);
@@ -158,25 +165,34 @@ void DrawMiniMapTex()
 	XMFLOAT3 oldPos = camera->pos;
 	XMFLOAT3 oldRot = camera->rot;
 	XMFLOAT3 oldAt = camera->at;
+
+	STAGE* stage = GetStage();
+	XMFLOAT3 stageRot = stage->rot;
 	
 	// カメラを上空から見下ろすように設定
 	// プレイヤーの位置を中心にする
 	PLAYER* player = GetPlayer();
-	SetCameraPosAtRot(XMFLOAT3(player->pos.x, 2000, player->pos.z), player->pos, XMFLOAT3(0, 0, 1));
+	SetCameraPosAtRot(XMFLOAT3(player->pos.x + 0.001f, player->pos.y + 1000.0f, player->pos.z + 0.001f), player->pos, XMFLOAT3(0.0f, 0.0f, 0.0f));
 	SetCamera();
+	
+	XMMATRIX orthoProj = XMMatrixOrthographicLH(2000.0f, 2000.0f, 0.1f, 5000.0f);
+	SetProjectionMatrix(&orthoProj);
 	
 	float clearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	ID3D11ShaderResourceView* null[] = { nullptr, nullptr };
 	GetDeviceContext()->PSSetShaderResources(2, 1, null);
 
 	// ミニマップ用のレンダーターゲットビューを設定
-	ID3D11RenderTargetView* pRTV[1] = { 0 };
 	GetDeviceContext()->RSSetViewports(1, &g_MiniMapViewport);
 	GetDeviceContext()->OMSetRenderTargets(1, &g_MiniMapRTV, g_MiniMapDSV);
 	GetDeviceContext()->ClearRenderTargetView(g_MiniMapRTV, clearColor);
 	GetDeviceContext()->ClearDepthStencilView(g_MiniMapDSV, D3D11_CLEAR_DEPTH, 1.0f, 0);
 	
 	DrawStage();
+	DrawTree();
+	SetLightEnable(false);
+	DrawIcon();
+	SetLightEnable(true);
 
 	// レンダーターゲットを戻す
 	SetShaderMode(SHADER_MODE_DEFAULT);

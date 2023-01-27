@@ -29,6 +29,7 @@
 #include "stage.h"
 #include "shadowmap.h"
 #include "debugproc.h"
+#include "minimap.h"
 
 //*****************************************************************************
 // マクロ定義
@@ -72,6 +73,8 @@ HRESULT InitGame(void)
 
 	// プレイヤーの初期化
 	InitPlayer();
+
+	InitMiniMap();
 
 	// エネミーの初期化
 	InitEnemy();
@@ -156,6 +159,8 @@ void UninitGame(void)
 	// 影の終了処理
 	UninitShadow();
 
+	UninitMiniMap();
+
 }
 
 //=============================================================================
@@ -209,6 +214,8 @@ void UpdateGame(void)
 
 	UpdateSkyBall();
 
+	UpdateMiniMap();
+
 	// 当たり判定処理
 	CheckHit();
 
@@ -221,6 +228,7 @@ void UpdateGame(void)
 //=============================================================================
 void DrawGame0(void)
 {
+	DrawMiniMapTex();
 	DrawShadowMap();
 	
 	// 3Dの物を描画する処理
@@ -229,7 +237,7 @@ void DrawGame0(void)
 	DrawStage();
 
 	// 影の描画処理
-	DrawShadow();
+	//DrawShadow();
 
 	// エネミーの描画処理
 	DrawEnemy();
@@ -263,7 +271,8 @@ void DrawGame0(void)
 	// スコアの描画処理
 	DrawScore();
 
-
+	DrawMiniMap();
+	
 	// ライティングを有効に
 	SetLightEnable(true);
 
