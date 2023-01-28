@@ -150,8 +150,7 @@ void DrawMiniMap()
 	// プリミティブトポロジ設定
 	GetDeviceContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 	
-	SetSpriteColor(g_VertexBuffer, 800.0f, 400.0f, 256.0f, 256.0f, 0.0f, 0.0f, 1.0f, 1.0f,
-		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+	SetSpriteLeftTop(g_VertexBuffer, 684.0f, 20.0f, 256.0f, 256.0f, 0.0f, 0.0f, 1.0f, 1.0f);
 
 	GetDeviceContext()->Draw(4, 0);
 
