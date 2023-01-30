@@ -93,6 +93,15 @@ cbuffer LightMatrixBuffer : register(b8)
     LIGHTMATRIX LightMatrix;
 }
 
+cbuffer TimeBuffer : register(b9)
+{
+    float4 Time;
+}
+
+cbuffer SSAOBuffer : register(b10)
+{
+    float4 SSAO;
+}
 
 struct VSINPUT
 {
@@ -161,9 +170,10 @@ PSINPUT VertexShaderPolygon( VSINPUT input)
 //*****************************************************************************
 // ÉOÉçÅ[ÉoÉãïœêî
 //*****************************************************************************
-Texture2D		g_Texture : register(t0);
-Texture2D		g_TexDepth : register(t1);
-SamplerState	g_SamplerState : register( s0 );
+Texture2D		g_Texture		: register(t0);
+Texture2D		g_TexDepth		: register(t1);
+Texture2D		g_TexSSAO		: register(t6);
+SamplerState	g_SamplerState	: register( s0 );
 SamplerComparisonState	 g_SamplerStatePCF : register(s1);
 
 
@@ -204,6 +214,14 @@ PSOUTPUT PixelShaderPolygon(PSINPUT input )
 		{
 			float3 lightDir;
 			float light;
+			
+			// SSAO
+            float4 AO = float4(1.0f, 1.0f, 1.0f, 1.0f);
+            if (SSAO.x == 1.0f)
+            {
+                float2 SampleCoord = float2(input.Position.x / 960.0f, input.Position.y / 540.0f);
+                AO = g_TexSSAO.Sample(g_SamplerState, SampleCoord);
+            }
 
 			if (Light.Flags[i].y == 1)
 			{
@@ -213,8 +231,9 @@ PSOUTPUT PixelShaderPolygon(PSINPUT input )
 					light = dot(lightDir, input.Normal.xyz);
 
 					light = 0.5 - 0.5 * light;
-					tempColor = color * Material.Diffuse * light * Light.Diffuse[i];
-				}
+                    tempColor = color * Material.Diffuse * light * Light.Diffuse[i];
+                    tempColor.rgb *= AO.rgb;
+                }
 				else if (Light.Flags[i].x == 2)
 				{
 					lightDir = normalize(Light.Position[i].xyz - input.WorldPos.xyz);

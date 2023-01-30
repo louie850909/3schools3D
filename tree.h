@@ -15,6 +15,7 @@ void UninitTree(void);
 void UpdateTree(void);
 void DrawTree(void);
 void DrawTreeShadowMap(void);
+void DrawTreeSSAO(int pass);
 
 INSTANCE* getTreeInstance();
 

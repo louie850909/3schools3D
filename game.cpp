@@ -30,6 +30,7 @@
 #include "shadowmap.h"
 #include "debugproc.h"
 #include "minimap.h"
+#include "SSAO.h"
 
 //*****************************************************************************
 // マクロ定義
@@ -115,6 +116,8 @@ HRESULT InitGame(void)
 
 	InitSkyBall();
 
+	InitSSAO();
+
 	// BGM再生
 	PlaySound(SOUND_LABEL_BGM_sample001);
 
@@ -160,6 +163,8 @@ void UninitGame(void)
 	UninitShadow();
 
 	UninitMiniMap();
+
+	UninitSSAO();
 
 }
 
@@ -228,13 +233,21 @@ void UpdateGame(void)
 //=============================================================================
 void DrawGame0(void)
 {
+	DrawSSAO();
+
+	SetSSAO(false);
+	
 	DrawMiniMapTex();
+	
 	DrawShadowMap();
 	
 	// 3Dの物を描画する処理
 	// 地面の描画処理
 	//DrawMeshField();
+
+	SetSSAO(true);
 	DrawStage();
+	SetSSAO(false);
 
 	// 影の描画処理
 	//DrawShadow();
@@ -251,10 +264,13 @@ void DrawGame0(void)
 	// 壁の描画処理
 	//DrawMeshWall();
 
+	SetSSAO(true);
 	// 木の描画処理
 	DrawTree();
+	SetSSAO(false);
 
 	DrawGrass();
+
 
 	// パーティクルの描画処理
 	//DrawParticle();
