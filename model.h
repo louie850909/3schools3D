@@ -52,6 +52,7 @@ void LoadModel( char *FileName, DX11_MODEL *Model );
 void UnloadModel( DX11_MODEL *Model );
 void DrawModel( DX11_MODEL *Model );
 void DrawInstanceModel(DX11_MODEL* Model, int InsanceNum, ID3D11Buffer* instanceBuffer, int shaderMode);
+void DrawInstanceModelSSAO(DX11_MODEL* Model, int InsanceNum, ID3D11Buffer* instanceBuffer, int pass);
 
 // モデルのマテリアルのディフューズを取得する。Max16個分にしてある
 void GetModelDiffuse(DX11_MODEL *Model, XMFLOAT4 *diffuse);

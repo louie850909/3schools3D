@@ -9,6 +9,7 @@
 #include "model.h"
 #include "camera.h"
 #include "collision.h"
+#include "SSAO.h"
 
 //*****************************************************************************
 // マクロ定義
@@ -202,6 +203,48 @@ void DrawInstanceModel(DX11_MODEL* Model, int InsanceNum, ID3D11Buffer* instance
 		SetShaderMode(SHADER_MODE_SHADOW_MAP_INST);
 		break;
 	}
+	
+	// 頂点バッファ設定
+	UINT strides[2];
+	UINT offsets[2];
+	ID3D11Buffer* bufferPointer[2];
+
+	strides[0] = sizeof(VERTEX_3D);
+	strides[1] = sizeof(INSTANCE);
+
+	offsets[0] = 0;
+	offsets[1] = 0;
+
+	bufferPointer[0] = Model->VertexBuffer;
+	bufferPointer[1] = instanceBuffer;
+	GetDeviceContext()->IASetVertexBuffers(0, 2, bufferPointer, strides, offsets);
+
+	// インデックスバッファ設定
+	GetDeviceContext()->IASetIndexBuffer(Model->IndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+
+	// プリミティブトポロジ設定
+	GetDeviceContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	for (unsigned short i = 0; i < Model->SubsetNum; i++)
+	{
+		// マテリアル設定
+		SetMaterial(Model->SubsetArray[i].Material.Material);
+
+		// テクスチャ設定
+		if (Model->SubsetArray[i].Material.Material.noTexSampling == 0)
+		{
+			GetDeviceContext()->PSSetShaderResources(0, 1, &Model->SubsetArray[i].Material.Texture);
+		}
+		// ポリゴン描画
+		GetDeviceContext()->DrawIndexedInstanced(Model->SubsetArray[i].IndexNum, InsanceNum, Model->SubsetArray[i].StartIndex, 0, 0);
+	}
+}
+
+void DrawInstanceModelSSAO(DX11_MODEL* Model, int InsanceNum, ID3D11Buffer* instanceBuffer, int pass)
+{
+	GetDeviceContext()->IASetInputLayout(GetSSAOInputLayout(pass));
+	GetDeviceContext()->VSSetShader(GetSSAOVertexShader(pass), NULL, 0);
+	GetDeviceContext()->PSSetShader(GetSSAOPixelShader(pass), NULL, 0);
 	
 	// 頂点バッファ設定
 	UINT strides[2];

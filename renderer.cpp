@@ -125,6 +125,7 @@ static ID3D11Buffer*			g_FuchiBuffer = NULL;
 static ID3D11Buffer*			g_CameraBuffer = NULL;
 static ID3D11Buffer*			g_LightMatrixBuffer = NULL;
 static ID3D11Buffer*			g_TimeBuffer = NULL;
+static ID3D11Buffer*			g_SSAOBuffer = NULL;
 
 static ID3D11DepthStencilState* g_DepthStateEnable;
 static ID3D11DepthStencilState* g_DepthStateDisable;
@@ -503,6 +504,12 @@ void SetTime(float time)
 {
 	XMFLOAT4 tmp = XMFLOAT4(time, 0.0f, 0.0f, 0.0f);
 	GetDeviceContext()->UpdateSubresource(g_TimeBuffer, 0, NULL, &tmp, 0, 0);
+}
+
+void SetSSAO(bool flag)
+{
+	XMFLOAT4 tmp = XMFLOAT4(flag, 0.0f, 0.0f, 0.0f);
+	GetDeviceContext()->UpdateSubresource(g_SSAOBuffer, 0, NULL, &tmp, 0, 0);
 }
 
 //=============================================================================
@@ -1084,6 +1091,12 @@ HRESULT InitRenderer(HINSTANCE hInstance, HWND hWnd, BOOL bWindow)
 	g_D3DDevice->CreateBuffer(&hBufferDesc, NULL, &g_TimeBuffer);
 	g_ImmediateContext->VSSetConstantBuffers(9, 1, &g_TimeBuffer);
 	g_ImmediateContext->PSSetConstantBuffers(9, 1, &g_TimeBuffer);
+
+	//SSAO
+	hBufferDesc.ByteWidth = sizeof(XMFLOAT4);
+	g_D3DDevice->CreateBuffer(&hBufferDesc, NULL, &g_SSAOBuffer);
+	g_ImmediateContext->VSSetConstantBuffers(10, 1, &g_SSAOBuffer);
+	g_ImmediateContext->PSSetConstantBuffers(10, 1, &g_SSAOBuffer);
 
 	// 入力レイアウト設定
 	g_ImmediateContext->IASetInputLayout( g_VertexLayout );

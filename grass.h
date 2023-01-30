@@ -15,6 +15,7 @@ void UninitGrass(void);
 void UpdateGrass(void);
 void DrawGrass(void);
 void DrawGrassShadowMap(void);
+void DrawGrassSSAO(int pass);
 
 INSTANCE* getGrassInstance();
 

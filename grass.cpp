@@ -15,6 +15,7 @@
 #include "stage.h"
 #include "file.h"
 #include <thread>
+#include "SSAO.h"
 
 
 //*****************************************************************************
@@ -335,6 +336,58 @@ void DrawGrassShadowMap(void)
 	// ライティングを無効
 	SetLightEnable(false);
 	SetShaderMode(SHADER_MODE_SHADOW_MAP_GRASS);
+
+	// 頂点バッファ設定
+	UINT strides[2];
+	UINT offsets[2];
+	ID3D11Buffer* bufferPointer[2];
+
+	strides[0] = sizeof(VERTEX_3D);
+	strides[1] = sizeof(INSTANCE);
+
+	offsets[0] = 0;
+	offsets[1] = 0;
+
+	bufferPointer[0] = g_VertexBuffer;
+	bufferPointer[1] = g_InstanceBuffer;
+	GetDeviceContext()->IASetVertexBuffers(0, 2, bufferPointer, strides, offsets);
+
+	// マテリアル設定
+	SetMaterial(g_aGrass.material);
+
+	// テクスチャ設定
+	GetDeviceContext()->PSSetShaderResources(0, 1, &g_Texture[0]);
+
+	// プリミティブトポロジ設定
+	GetDeviceContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+
+	//SetInstance(g_aInstance, MAX_GRASS);
+	GetDeviceContext()->DrawInstanced(4, MAX_GRASS, 0, 0);
+
+
+	// ライティングを有効に
+	SetLightEnable(true);
+
+	// αテストを無効に
+	SetAlphaTestEnable(false);
+
+	SetShaderMode(SHADER_MODE_DEFAULT);
+}
+
+void DrawGrassSSAO(int pass)
+{
+	// αテスト設定
+	if (g_bAlpaTest == true)
+	{
+		// αテストを有効に
+		SetAlphaTestEnable(true);
+	}
+
+	// ライティングを無効
+	SetLightEnable(false);
+	GetDeviceContext()->IASetInputLayout(GetSSAOInputLayout(pass));
+	GetDeviceContext()->VSSetShader(GetSSAOVertexShader(pass), NULL, 0);
+	GetDeviceContext()->PSSetShader(GetSSAOPixelShader(pass), NULL, 0);
 
 	// 頂点バッファ設定
 	UINT strides[2];

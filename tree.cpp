@@ -14,6 +14,7 @@
 #include "stage.h"
 #include "file.h"
 #include <thread>
+#include "SSAO.h"
 
 
 //*****************************************************************************
@@ -266,6 +267,11 @@ void DrawTree(void)
 void DrawTreeShadowMap(void)
 {
 	DrawInstanceModel(&g_aTree[g_TypeNo].model, MAX_TREE, g_InstanceBuffer, SHADER_MODE_SHADOW_MAP_INST);
+}
+
+void DrawTreeSSAO(int pass)
+{
+	DrawInstanceModelSSAO(&g_aTree[g_TypeNo].model, MAX_TREE, g_InstanceBuffer, pass);
 }
 
 INSTANCE* getTreeInstance()
