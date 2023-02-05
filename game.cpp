@@ -267,6 +267,9 @@ void DrawGame0(void)
 	SetSSAO(true);
 	// 木の描画処理
 	DrawTree();
+	// 空の描画処理
+	DrawSkyBall();
+	
 	SetSSAO(false);
 
 	DrawGrass();
@@ -274,8 +277,6 @@ void DrawGame0(void)
 
 	// パーティクルの描画処理
 	//DrawParticle();
-
-	DrawSkyBall();
 
 	// 2Dの物を描画する処理
 	// Z比較なし

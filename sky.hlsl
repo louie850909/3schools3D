@@ -91,6 +91,11 @@ cbuffer LightMatrixBuffer : register(b8)
     LIGHTMATRIX LightMatrix;
 }
 
+cbuffer SSAOBuffer : register(b10)
+{
+    float4 SSAO;
+}
+
 struct VSINPUT
 {
     float4 Position : POSITION0;
@@ -118,6 +123,7 @@ struct PSOUTPUT
 //*****************************************************************************
 #define PI 3.1415926535897932384626433832795
 Texture2D g_Texture : register(t0);
+Texture2D g_TexSSAO : register(t6);
 SamplerState g_SamplerState : register(s0);
 
 float Scale(float fcos)
@@ -226,5 +232,15 @@ PSOUTPUT SKY(PSINPUT input)
     PSOUTPUT output;
     output.Diffuse = 1.0f;
     output.Diffuse.rgb = sky * (1.0f - star.a) + star.rgb * star.a;
+    
+    // SSAO
+    float4 AO = float4(1.0f, 1.0f, 1.0f, 1.0f);
+    if (SSAO.x == 1.0f)
+    {
+        float2 SampleCoord = float2(input.Position.x / 960.0f, input.Position.y / 540.0f);
+        AO = g_TexSSAO.Sample(g_SamplerState, SampleCoord);
+    }
+    
+    output.Diffuse.rgb *= AO.rgb;
     return output;
 }
