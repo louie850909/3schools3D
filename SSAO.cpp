@@ -34,11 +34,20 @@ static ID3D11VertexShader* g_VertexShaderSSAONormalZMap = NULL;
 static ID3D11InputLayout* g_InputLayoutSSAONormalZMap = NULL;
 static ID3D11PixelShader* g_PixelShaderSSAONormalZMap = NULL;
 
+static ID3D11VertexShader* g_VertexShaderSSAO = NULL;
+static ID3D11InputLayout* g_InputLayoutSSAO = NULL;
 static ID3D11PixelShader* g_PixelShaderSSAO = NULL;
 
 static ID3D11PixelShader* g_PixelShaderSSAOBlur = NULL;
 
 static ID3D11Buffer* g_VertexBuffer = NULL;
+
+static ID3D11Buffer* g_SSAOConstantBuffer = NULL;
+
+static SSAO_CONSTANT_BUFFER g_SSAOConstant;
+
+void SetSSAOConstant(void);
+static XMMATRIX InverseTranspose(CXMMATRIX M);
 
 HRESULT InitSSAO()
 {
@@ -90,7 +99,7 @@ HRESULT InitSSAO()
 	{
 		texDesc.Width = SCREEN_WIDTH;
 		texDesc.Height = SCREEN_HEIGHT;
-		texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		texDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 		texDesc.Usage = D3D11_USAGE_DEFAULT;
 		texDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
 		texDesc.CPUAccessFlags = 0;
@@ -261,6 +270,33 @@ HRESULT InitSSAO()
 	GetDevice()->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), NULL, &g_PixelShaderSSAONormalZMap);
 	pPSBlob->Release();
 	pPSBlob = NULL;
+
+	// SSAO用の頂点シェーダー
+	hr = D3DX11CompileFromFile("SSAO.hlsl", NULL, NULL, "SSAOVS", "vs_4_0", shFlag, 0, NULL, &pVSBlob, &pErrorBlob, NULL);
+	if (FAILED(hr))
+	{
+		MessageBox(NULL, (char*)pErrorBlob->GetBufferPointer(), "VS", MB_OK | MB_ICONERROR);
+	}
+	GetDevice()->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, &g_VertexShaderSSAO);
+	
+	// SSAO用の入力レイアウト生成
+	D3D11_INPUT_ELEMENT_DESC SSAOLayout[] =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,       0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT,       0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT,    0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,          0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	};
+	UINT SSAONumElements = ARRAYSIZE(SSAOLayout);
+	
+	GetDevice()->CreateInputLayout(SSAOLayout,
+		SSAONumElements,
+		pVSBlob->GetBufferPointer(),
+		pVSBlob->GetBufferSize(),
+		&g_InputLayoutSSAO);
+	
+	pVSBlob->Release();
+	pVSBlob = NULL;
 	
 	// SSAO用のピクセルシェーダーを作成
 	hr = D3DX11CompileFromFile("SSAO.hlsl", NULL, NULL, "SSAOPS", "ps_4_0", shFlag, 0, NULL, &pPSBlob, &pErrorBlob, NULL);
@@ -290,6 +326,19 @@ HRESULT InitSSAO()
 	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	GetDevice()->CreateBuffer(&bd, NULL, &g_VertexBuffer);
+
+	// コンスタントバッファ生成
+	D3D11_BUFFER_DESC hBufferDesc;
+	hBufferDesc.ByteWidth = sizeof(SSAO_CONSTANT_BUFFER);
+	hBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	hBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	hBufferDesc.CPUAccessFlags = 0;
+	hBufferDesc.MiscFlags = 0;
+	hBufferDesc.StructureByteStride = sizeof(float);
+
+	GetDevice()->CreateBuffer(&hBufferDesc, NULL, &g_SSAOConstantBuffer);
+	GetDeviceContext()->VSSetConstantBuffers(11, 1, &g_SSAOConstantBuffer);
+	GetDeviceContext()->PSSetConstantBuffers(11, 1, &g_SSAOConstantBuffer);
 	
 	return S_OK;
 }
@@ -300,6 +349,7 @@ void UpdateSSAO()
 
 void DrawSSAO()
 {
+	SetSSAOConstant();
 	DrawNormalZMap();
 	DrawSSAOTex();
 	DrawSSAOBlurTex();
@@ -454,7 +504,7 @@ void DrawNormalZMap()
 	GetDeviceContext()->PSSetShader(g_PixelShaderSSAONormalZMap, NULL, 0);
 	
 	// クリアシェーダーリソース
-	ID3D11ShaderResourceView* null[] = { nullptr, nullptr };
+	ID3D11ShaderResourceView* null[] = { nullptr };
 	GetDeviceContext()->PSSetShaderResources(3, 1, null);
 
 	D3D11_VIEWPORT vp;
@@ -493,6 +543,8 @@ void DrawNormalZMap()
 void DrawSSAOTex()
 {
 	// ピクセルシェーダーを設定
+	GetDeviceContext()->IASetInputLayout(g_InputLayoutSSAO);
+	GetDeviceContext()->VSSetShader(g_VertexShaderSSAO, NULL, 0);
 	GetDeviceContext()->PSSetShader(g_PixelShaderSSAO, NULL, 0);
 
 	// クリアシェーダーリソース
@@ -520,23 +572,21 @@ void DrawSSAOTex()
 	UINT stride = sizeof(VERTEX_3D);
 	UINT offset = 0;
 	GetDeviceContext()->IASetVertexBuffers(0, 1, &g_VertexBuffer, &stride, &offset);
-
-	SetWorldViewProjection2D();
 	
 	D3D11_MAPPED_SUBRESOURCE msr;
 	GetDeviceContext()->Map(g_VertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &msr);
 
 	VERTEX_3D* vertex = (VERTEX_3D*)msr.pData;
 	
-	vertex[0].Position = XMFLOAT3(0.0f, 0.0f, 0.0f);
-	vertex[1].Position = XMFLOAT3(SCREEN_WIDTH, 0.0f, 0.0f);
-	vertex[2].Position = XMFLOAT3(0.0f, SCREEN_HEIGHT, 0.0f);
-	vertex[3].Position = XMFLOAT3(SCREEN_WIDTH, SCREEN_HEIGHT, 0.0f);
+	vertex[0].Position = XMFLOAT3(-1.0f, +1.0f, 0.0f);
+	vertex[1].Position = XMFLOAT3(+1.0f, +1.0f, 0.0f);
+	vertex[2].Position = XMFLOAT3(-1.0f, -1.0f, 0.0f);
+	vertex[3].Position = XMFLOAT3(+1.0f, -1.0f, 0.0f);
 
-	vertex[0].Normal = XMFLOAT3(0.0f, 0.0f, 1.0f);
-	vertex[1].Normal = XMFLOAT3(0.0f, 0.0f, 1.0f);
-	vertex[2].Normal = XMFLOAT3(0.0f, 0.0f, 1.0f);
-	vertex[3].Normal = XMFLOAT3(0.0f, 0.0f, 1.0f);
+	vertex[0].Normal = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	vertex[1].Normal = XMFLOAT3(1.0f, 0.0f, 0.0f);
+	vertex[2].Normal = XMFLOAT3(2.0f, 0.0f, 0.0f);
+	vertex[3].Normal = XMFLOAT3(3.0f, 0.0f, 0.0f);
 
 	vertex[0].TexCoord = XMFLOAT2(0.0f, 0.0f);
 	vertex[1].TexCoord = XMFLOAT2(1.0f, 0.0f);
@@ -564,6 +614,8 @@ void DrawSSAOTex()
 
 void DrawSSAOBlurTex()
 {
+	SetShaderMode(SHADER_MODE_DEFAULT);
+	
 	// ピクセルシェーダーを設定
 	GetDeviceContext()->PSSetShader(g_PixelShaderSSAOBlur, NULL, 0);
 
@@ -680,4 +732,65 @@ ID3D11InputLayout* GetSSAOInputLayout(int pass)
 		return g_SSAOGrassLayout;
 		break;
 	}
+}
+
+void SetSSAOConstant(void)
+{
+	XMMATRIX Tex(
+		0.5f, 0.0f, 0.0f, 0.0f,
+		0.0f, -0.5f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, 0.0f,
+		0.5f, 0.5f, 0.0f, 1.0f);
+
+	g_SSAOConstant.ViewToTex = XMMatrixTranspose(Tex);
+	
+	g_SSAOConstant.FrustumCorners[0] = XMFLOAT4(-SCREEN_WIDTH / 2, -SCREEN_HEIGHT / 2, VIEW_FAR_Z, 0.0f);
+	g_SSAOConstant.FrustumCorners[1] = XMFLOAT4(-SCREEN_WIDTH / 2, +SCREEN_HEIGHT / 2, VIEW_FAR_Z, 0.0f);
+	g_SSAOConstant.FrustumCorners[2] = XMFLOAT4(+SCREEN_WIDTH / 2, +SCREEN_HEIGHT / 2, VIEW_FAR_Z, 0.0f);
+	g_SSAOConstant.FrustumCorners[3] = XMFLOAT4(+SCREEN_WIDTH / 2, -SCREEN_HEIGHT / 2, VIEW_FAR_Z, 0.0f);
+
+	XMFLOAT4 mOffsets[14];
+	// 8 立方体の頂点
+	mOffsets[0] = XMFLOAT4(+1.0f, +1.0f, +1.0f, 0.0f);
+	mOffsets[1] = XMFLOAT4(-1.0f, -1.0f, -1.0f, 0.0f);
+
+	mOffsets[2] = XMFLOAT4(-1.0f, +1.0f, +1.0f, 0.0f);
+	mOffsets[3] = XMFLOAT4(+1.0f, -1.0f, -1.0f, 0.0f);
+
+	mOffsets[4] = XMFLOAT4(+1.0f, +1.0f, -1.0f, 0.0f);
+	mOffsets[5] = XMFLOAT4(-1.0f, -1.0f, +1.0f, 0.0f);
+
+	mOffsets[6] = XMFLOAT4(-1.0f, +1.0f, -1.0f, 0.0f);
+	mOffsets[7] = XMFLOAT4(+1.0f, -1.0f, +1.0f, 0.0f);
+
+	// 6 面の中心
+	mOffsets[8] = XMFLOAT4(-1.0f, 0.0f, 0.0f, 0.0f);
+	mOffsets[9] = XMFLOAT4(+1.0f, 0.0f, 0.0f, 0.0f);
+
+	mOffsets[10] = XMFLOAT4(0.0f, -1.0f, 0.0f, 0.0f);
+	mOffsets[11] = XMFLOAT4(0.0f, +1.0f, 0.0f, 0.0f);
+
+	mOffsets[12] = XMFLOAT4(0.0f, 0.0f, -1.0f, 0.0f);
+	mOffsets[13] = XMFLOAT4(0.0f, 0.0f, +1.0f, 0.0f);
+	
+	for (int i = 0; i < 14; i++)
+	{
+		// 0.25から1.0の範囲にランダムにする
+		float s = 0.25f + (rand() % RAND_MAX) / RAND_MAX * 0.75f;
+		XMVECTOR v = s * XMVector4Normalize(XMLoadFloat4(&mOffsets[i]));
+		XMStoreFloat4(&mOffsets[i], v);
+		
+		g_SSAOConstant.OffsetVectors[i] = mOffsets[i];
+	}
+
+	GetDeviceContext()->UpdateSubresource(g_SSAOConstantBuffer, 0, NULL, &g_SSAOConstant, 0, 0);
+}
+
+static XMMATRIX InverseTranspose(CXMMATRIX M)
+{
+	XMMATRIX A = M;
+	A.r[3] = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+
+	XMVECTOR det = XMMatrixDeterminant(A);
+	return XMMatrixTranspose(XMMatrixInverse(&det, A));
 }

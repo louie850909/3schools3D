@@ -96,6 +96,23 @@ cbuffer TimeBuffer : register(b9)
     float4 Time;
 }
 
+struct SSAOCB
+{
+    matrix ViewToTex;
+    float4 OffsetVectors[14];
+    float4 FrustumCorners[4];
+	
+    float OcclusionRadius;
+    float OcclusionFadeStart;
+    float OcclusionFadeEnd;
+    float SurfaceEpsilon;
+};
+
+cbuffer SSAOBuffer : register(b11)
+{
+    SSAOCB SSAO;
+}
+
 struct VSINPUT
 {
     float4 Position : POSITION0;
@@ -109,9 +126,7 @@ struct PSINPUT
     float4 Position : SV_POSITION;
     float4 Normal : NORMAL0;
     float2 TexCoord : TEXCOORD0;
-    float4 Diffuse : COLOR0;
-    float4 WorldPos : POSITION0;
-    float4 LightPos : POSITION1;
+    float4 ViewPos : POSITION0;
 };
 
 struct PSOUTPUT
@@ -185,12 +200,20 @@ PSINPUT NormalZMapVS(VSINPUT input)
     wvp = mul(World, View);
     wvp = mul(wvp, Projection);
     
+    float3x3 wv = mul((float3x3)World, (float3x3)View);
+    float4x4 wv4 = float4x4(
+        float4(wv[0],   0),
+        float4(wv[1],   0),
+        float4(wv[2],   0),
+        float4(0, 0, 0, 1)
+    );
+    
     output.Position = mul(input.Position, wvp);
     output.Normal = input.Normal;
-    output.Diffuse = input.Diffuse;
+    output.Normal = normalize(mul(input.Normal, inverse(transpose(wv4))));
     output.TexCoord = input.TexCoord;
-    output.WorldPos = output.Position;
-    output.LightPos = mul(input.Position, LightMatrix.LightView[0]);
+    output.ViewPos = mul(input.Position, World);
+    output.ViewPos = mul(output.ViewPos, View);
     
     return output;
 }
@@ -207,10 +230,21 @@ PSOUTPUT NormalZMapPS(PSINPUT input)
     float4x4 Wxv = mul(World, View);
     
     float4 Out;
-    Out.xy = normalize(mul(float4(input.Normal.xyz, 0), View).xyz).xy;
-    Out.zw = input.WorldPos.zw;
+    Out.xyz = input.Normal.xyz;
+    Out.w = input.ViewPos.z;
     
     output.Diffuse = Out;
+    return output;
+}
+
+PSINPUT SSAOVS(VSINPUT input)
+{
+    PSINPUT output;
+    
+    output.Position = input.Position;
+    output.Normal = SSAO.FrustumCorners[input.Normal.x];
+    output.TexCoord = input.TexCoord;
+    output.ViewPos = input.Position;
     return output;
 }
 
@@ -352,7 +386,7 @@ struct SSAOPSINSTIN
     float4 Normal        : NORMAL0;
     float2 TexCoord      : TEXCOORD0;
     float4 Diffuse       : COLOR0;
-    float4 WorldPos      : Position0;
+    float4 ViewPos      : Position0;
     float4 inInstancePos : INSTPOS0;
     float4 inInstanceScl : INSTSCL0;
     float4 inInstanceRot : INSTROT0;
@@ -411,13 +445,23 @@ SSAOPSINSTIN SSAO_INSTVS(SSAOVSINSTIN input)
     world = mul(world, trans);
     wvp = mul(world, View);
     wvp = mul(wvp, Projection);
+    
+    float3x3 wv = mul((float3x3) world, (float3x3) View);
+    float4x4 wv4 = float4x4(
+        float4(wv[0], 0),
+        float4(wv[1], 0),
+        float4(wv[2], 0),
+        float4(0, 0, 0, 1)
+    );
+    
     output.Position = mul(input.Position, wvp);
-	
-    output.Normal = normalize(mul(float4(input.Normal.xyz, 0.0f), world));
+    output.Normal = input.Normal;
+    //output.Normal = normalize(mul(input.Normal, transpose(inverse(wv4))));
 
     output.TexCoord = input.TexCoord;
 
-    output.WorldPos = output.Position;
+    output.ViewPos = mul(input.Position, world);
+    output.ViewPos = mul(output.ViewPos, View);
 
     output.Diffuse = input.Diffuse;
     
@@ -485,8 +529,8 @@ SSAOPSINSTOUT SSAO_INSTPS(SSAOPSINSTIN input)
     float4x4 Wxv = mul(world, View);
     
     float4 Out;
-    Out.xy = normalize(mul(float4(input.Normal.xyz, 0), Wxv).xyz).xy;
-    Out.zw = input.WorldPos.zw;
+    Out.rgb = (input.Normal.xyz);
+    Out.a = input.ViewPos.z;
     
     SSAOPSINSTOUT output;
     output.Diffuse = Out;
@@ -538,7 +582,7 @@ SSAOPSINSTIN SSAO_GRASSVS(SSAOVSINSTIN input)
 
     output.TexCoord = input.TexCoord;
 	
-    output.WorldPos = output.Position;
+    output.ViewPos = output.Position;
 
     output.Diffuse = input.Diffuse;
     
@@ -585,7 +629,7 @@ SSAOPSINSTOUT SSAO_GRASSPS(SSAOPSINSTIN input)
     
     float4 Out;
     Out.xy = normalize(mul(float4(input.Normal.xyz, 0), Wxv).xyz).xy;
-    Out.zw = input.WorldPos.zw;
+    Out.zw = input.ViewPos.zw;
     
     SSAOPSINSTOUT output;
     output.Diffuse = Out;
