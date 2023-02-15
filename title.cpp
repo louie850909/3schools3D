@@ -19,6 +19,7 @@
 #include "skyball.h"
 #include "title.h"
 #include "camera.h"
+#include "SSAO.h"
 
 //*****************************************************************************
 // マクロ定義
@@ -209,10 +210,13 @@ void UpdateTitle(void)
 void DrawTitle(void)
 {
 	DrawShadowMap();
+	
+	SetSSAO(false);
 	DrawSkyBall();
 	DrawStage();
 	DrawTree();
 	DrawGrass();
+	SetSSAO(true);
 	
 	
 	// 頂点バッファ設定

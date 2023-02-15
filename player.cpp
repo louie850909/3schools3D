@@ -55,14 +55,8 @@ static float		roty = 0.0f;
 
 static LIGHT		g_Light;
 
-
-
-
-
 // プレイヤーの階層アニメーションデータ
-
-
-// プレイヤーの頭を左右に動かしているアニメデータ
+// プレイヤーの歩いているアニメデータ
 static INTERPOLATION_DATA move_lefthand_tbl[] = {	// pos, rot, scl, frame
 	{ XMFLOAT3(-5.0f, -5.3f, 9.6f), XMFLOAT3(-0.2f, -0.1f, 1.3f),      XMFLOAT3(1.0f, 1.0f, 1.0f), 30 },
 	{ XMFLOAT3(-5.0f, -5.3f, 9.6f), XMFLOAT3(-1.5f, -0.1f, 1.3f),      XMFLOAT3(1.0f, 1.0f, 1.0f), 30 },
@@ -81,8 +75,6 @@ static INTERPOLATION_DATA move_righthand_tbl[] = {	// pos, rot, scl, frame
 
 };
 
-
-// プレイヤーの歩いているアニメデータ
 static INTERPOLATION_DATA idle_lefthand_tbl[] = {	// pos, rot, scl, frame
 	{ XMFLOAT3(-5.0f, -5.3f, 9.6f), XMFLOAT3(-1.5f, -0.1f, 1.3f),      XMFLOAT3(1.0f, 1.0f, 1.0f), 30 },
 	//{ XMFLOAT3(0.0f, 10.0f, 0.0f), XMFLOAT3(0.0f, -XM_PI / 2, 0.0f), XMFLOAT3(1.0f, 1.0f, 1.0f), 240 },
@@ -434,50 +426,6 @@ void UpdatePlayer(void)
 		g_Player.pos.z = -2500.0f;
 	}
 
-	//// ポイントライトのテスト
-	//{
-	//	LIGHT *light = GetLightData(1);
-	//	XMFLOAT3 pos = g_Player.pos;
-	//	pos.y += 20.0f;
-
-	//	light->Position = pos;
-	//	light->Diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	//	light->Ambient = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	//	light->Type = LIGHT_TYPE_POINT;
-	//	light->Enable = TRUE;
-	//	SetLightData(1, light);
-	//}
-
-
-
-	//////////////////////////////////////////////////////////////////////
-	// 姿勢制御
-	//////////////////////////////////////////////////////////////////////
-
-//	XMVECTOR vx, nvx, up;
-//	XMVECTOR quat;
-//	float len, angle;
-//
-//
-//	g_Player.UpVector = Normal;
-//	up = { 0.0f, 1.0f, 0.0f, 0.0f };
-//	vx = XMVector3Cross(up, XMLoadFloat3(&g_Player.UpVector));
-//
-//	nvx = XMVector3Length(vx);
-//	XMStoreFloat(&len, nvx);
-//	nvx = XMVector3Normalize(vx);
-//	//nvx = vx / len;
-//	angle = asinf(len);
-//
-//	//quat = XMQuaternionIdentity();
-//
-////	quat = XMQuaternionRotationAxis(nvx, angle);
-//	quat = XMQuaternionRotationNormal(nvx, angle);
-//
-//
-//	quat = XMQuaternionSlerp(XMLoadFloat4(&g_Player.Quaternion), quat, 0.05f);
-//	XMStoreFloat4(&g_Player.Quaternion, quat);
-
 	// エネミーとの当たり判定
 	ENEMY* enemy = GetEnemy();
 	XMFLOAT3 hitPos = { 0.0f, 0.0f, 0.0f };
@@ -535,9 +483,6 @@ void DrawPlayer(void)
 
 	// 縁取りの設定
 	SetFuchi(false);
-
-	// モデル描画
-	//DrawModel(&g_Player.model);
 
 
 
