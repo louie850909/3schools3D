@@ -1,7 +1,7 @@
 //=============================================================================
 //
 // ゲーム画面処理 [game.cpp]
-// Author : 
+// Author : 林　劭羲
 //
 //=============================================================================
 #include "main.h"
@@ -80,26 +80,6 @@ HRESULT InitGame(void)
 	// エネミーの初期化
 	InitEnemy();
 
-	// 壁の初期化
-	//InitMeshWall(XMFLOAT3(0.0f, 0.0f, MAP_TOP), XMFLOAT3(0.0f, 0.0f, 0.0f),
-	//	XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), 16, 2, 80.0f, 80.0f);
-	//InitMeshWall(XMFLOAT3(MAP_LEFT, 0.0f, 0.0f), XMFLOAT3(0.0f, -XM_PI * 0.50f, 0.0f),
-	//	XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), 16, 2, 80.0f, 80.0f);
-	//InitMeshWall(XMFLOAT3(MAP_RIGHT, 0.0f, 0.0f), XMFLOAT3(0.0f, XM_PI * 0.50f, 0.0f),
-	//	XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), 16, 2, 80.0f, 80.0f);
-	//InitMeshWall(XMFLOAT3(0.0f, 0.0f, MAP_DOWN), XMFLOAT3(0.0f,  XM_PI, 0.0f),
-	//	XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), 16, 2, 80.0f, 80.0f);
-
-	//// 壁(裏側用の半透明)
-	//InitMeshWall(XMFLOAT3(0.0f, 0.0f, MAP_TOP), XMFLOAT3(0.0f,    XM_PI, 0.0f),
-	//	XMFLOAT4(1.0f, 1.0f, 1.0f, 0.25f), 16, 2, 80.0f, 80.0f);
-	//InitMeshWall(XMFLOAT3(MAP_LEFT, 0.0f, 0.0f), XMFLOAT3(0.0f,   XM_PI * 0.50f, 0.0f),
-	//	XMFLOAT4(1.0f, 1.0f, 1.0f, 0.25f), 16, 2, 80.0f, 80.0f);
-	//InitMeshWall(XMFLOAT3(MAP_RIGHT, 0.0f, 0.0f), XMFLOAT3(0.0f, -XM_PI * 0.50f, 0.0f),
-	//	XMFLOAT4(1.0f, 1.0f, 1.0f, 0.25f), 16, 2, 80.0f, 80.0f);
-	//InitMeshWall(XMFLOAT3(0.0f, 0.0f, MAP_DOWN), XMFLOAT3(0.0f, 0.0f, 0.0f),
-	//	XMFLOAT4(1.0f, 1.0f, 1.0f, 0.25f), 16, 2, 80.0f, 80.0f);
-
 	// 木を生やす
 	InitTree();
 
@@ -143,12 +123,6 @@ void UninitGame(void)
 
 	UninitGrass();
 
-	// 壁の終了処理
-	//UninitMeshWall();
-
-	// 地面の終了処理
-	//UninitMeshField();
-
 	// エネミーの終了処理
 	UninitEnemy();
 
@@ -190,9 +164,6 @@ void UpdateGame(void)
 
 	if(g_bPause == false)
 		return;
-
-	// 地面処理の更新
-	//UpdateMeshField();
 
 	// プレイヤーの更新処理
 	UpdatePlayer();
@@ -242,15 +213,10 @@ void DrawGame0(void)
 	DrawShadowMap();
 	
 	// 3Dの物を描画する処理
-	// 地面の描画処理
-	//DrawMeshField();
 
 	SetSSAO(true);
 	DrawStage();
 	SetSSAO(false);
-
-	// 影の描画処理
-	//DrawShadow();
 
 	// エネミーの描画処理
 	DrawEnemy();
@@ -261,9 +227,6 @@ void DrawGame0(void)
 	// 弾の描画処理
 	DrawBullet();
 
-	// 壁の描画処理
-	//DrawMeshWall();
-
 	SetSSAO(true);
 	// 木の描画処理
 	DrawTree();
@@ -273,10 +236,6 @@ void DrawGame0(void)
 	SetSSAO(false);
 
 	DrawGrass();
-
-
-	// パーティクルの描画処理
-	//DrawParticle();
 
 	// 2Dの物を描画する処理
 	// Z比較なし
@@ -363,26 +322,6 @@ void CheckHit(void)
 	ENEMY *enemy = GetEnemy();		// エネミーのポインターを初期化
 	PLAYER *player = GetPlayer();	// プレイヤーのポインターを初期化
 	BULLET *bullet = GetBullet();	// 弾のポインターを初期化
-
-	// 敵とプレイヤーキャラ
-	//for (int i = 0; i < MAX_ENEMY; i++)
-	//{
-	//	//敵の有効フラグをチェックする
-	//	if (enemy[i].use == false)
-	//		continue;
-
-	//	//BCの当たり判定
-	//	if (CollisionBC(player->pos, enemy[i].pos, player->size, enemy[i].size))
-	//	{
-	//		// 敵キャラクターは倒される
-	//		enemy[i].use = false;
-	//		ReleaseShadow(enemy[i].shadowIdx);
-
-	//		// スコアを足す
-	//		AddScore(100);
-	//	}
-	//}
-
 
 	// プレイヤーの弾と敵
 	for (int i = 0; i < MAX_BULLET; i++)

@@ -1,7 +1,7 @@
 //=============================================================================
 //
 // 草処理 [grass.cpp]
-// Author : 
+// Author : 林　劭羲
 //
 //=============================================================================
 #include "main.h"
@@ -254,16 +254,6 @@ void UninitGrass(void)
 //=============================================================================
 void UpdateGrass(void)
 {
-	
-	
-	//for (int nCntGrass = 0; nCntGrass < MAX_GRASS; nCntGrass++)
-	//{
-	//	if (g_aGrass[nCntGrass].bUse)
-	//	{
-	//		// 影の位置設定
-	//		//SetPositionShadow(g_aGrass[nCntGrass].nIdxShadow, XMFLOAT3(g_aGrass[nCntGrass].pos.x, 0.1f, g_aGrass[nCntGrass].pos.z));
-	//	}
-	//}
 
 #ifdef _DEBUG
 	// アルファテストON/OFF
@@ -316,7 +306,7 @@ void DrawGrass(void)
 
 
 	// ライティングを有効に
-	//SetLightEnable(true);
+	SetLightEnable(true);
 
 	// αテストを無効に
 	SetAlphaTestEnable(false);

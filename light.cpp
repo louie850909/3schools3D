@@ -260,6 +260,9 @@ BOOL	GetFogEnable(void)
 	return(g_FogEnable);
 }
 
+//=============================================================================
+// ライトのビュー行列の更新
+//=============================================================================
 void UpdateLightViewMatrix(int index, LIGHT light)
 {
 	XMMATRIX LightView = XMMatrixIdentity();
