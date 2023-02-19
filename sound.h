@@ -19,7 +19,7 @@ enum
 	SOUND_LABEL_BGM_sample000,	// BGM0
 	SOUND_LABEL_BGM_sample001,	// BGM1
 	SOUND_LABEL_BGM_sample002,	// BGM2
-	SOUND_LABEL_SE_bomb000,		// ”š”­‰¹
+	SOUND_LABEL_SE_walk,		// •à‚«
 	SOUND_LABEL_SE_defend000,	// 
 	SOUND_LABEL_SE_defend001,	// 
 	SOUND_LABEL_SE_hit000,		// 

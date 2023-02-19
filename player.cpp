@@ -17,6 +17,7 @@
 #include "enemy.h"
 #include "stage.h"
 #include "fade.h"
+#include "sound.h"
 
 //*****************************************************************************
 // マクロ定義
@@ -109,8 +110,7 @@ static INTERPOLATION_DATA run_righthand_tbl[] = {	// pos, rot, scl, frame
 
 };
 
-
-
+static int g_counter = 0;
 
 
 
@@ -239,6 +239,7 @@ void UpdatePlayer(void)
 	// fps移動処理
 	if (GetKeyboardPress(DIK_A))
 	{
+		g_Player.state = MOVE;
 		g_Player.spd = VALUE_MOVE;
 		//g_Player.pos.x -= g_Player.spd;
 
@@ -248,6 +249,7 @@ void UpdatePlayer(void)
 
 	if (IsButtonTriggered(0, BUTTON_LEFT))
 	{
+		g_Player.state = MOVE;
 		g_Player.spd = VALUE_MOVE;
 		//g_Player.pos.x -= g_Player.spd;
 
@@ -257,6 +259,7 @@ void UpdatePlayer(void)
 	
 	if (GetKeyboardPress(DIK_D))
 	{
+		g_Player.state = MOVE;
 		g_Player.spd = VALUE_MOVE;
 		//g_Player.pos.x += g_Player.spd;
 		
@@ -266,6 +269,7 @@ void UpdatePlayer(void)
 
 	if (IsButtonTriggered(0, BUTTON_RIGHT))
 	{
+		g_Player.state = MOVE;
 		g_Player.spd = VALUE_MOVE;
 		//g_Player.pos.x += g_Player.spd;
 
@@ -303,6 +307,7 @@ void UpdatePlayer(void)
 	
 	if (GetKeyboardPress(DIK_S))
 	{
+		g_Player.state = MOVE;
 		g_Player.spd = VALUE_MOVE;
 		//g_Player.pos.z -= g_Player.spd;
 
@@ -312,11 +317,20 @@ void UpdatePlayer(void)
 
 	if (IsButtonTriggered(0, BUTTON_DOWN))
 	{
+		g_Player.state = MOVE;
 		g_Player.spd = VALUE_MOVE;
 		//g_Player.pos.z -= g_Player.spd;
 
 		g_Player.pos.x -= sinf(g_Player.rot.y) * g_Player.spd;
 		g_Player.pos.z -= cosf(g_Player.rot.y) * g_Player.spd;
+	}
+
+	if (g_Player.state == MOVE) g_counter++;
+
+	if (g_counter >= 25)
+	{
+		g_counter = 0;
+		PlaySound(SOUND_LABEL_SE_walk);
 	}
 
 #ifdef _DEBUG
@@ -442,6 +456,7 @@ void UpdatePlayer(void)
 	// デバッグ表示
 	PrintDebugProc("Player X:%f Y:%f Z:%f N:%f\n", g_Player.pos.x, g_Player.pos.y, g_Player.pos.z, Normal.y);
 	PrintDebugProc("Hitpoint X:%f Y:%f Z:%f\n", HitPosition.x, HitPosition.y, HitPosition.z);
+	PrintDebugProc("g_counter = %d\n", g_counter);
 #endif
 
 }
