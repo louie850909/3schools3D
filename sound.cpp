@@ -32,7 +32,7 @@ DWORD g_aSizeAudio[SOUND_LABEL_MAX] = {};					// オーディオデータサイズ
 // 各音素材のパラメータ
 SOUNDPARAM g_aParam[SOUND_LABEL_MAX] =
 {
-	{ (char*)"data/BGM/sample000.wav", -1 },	// BGM0
+	{ (char*)"data/BGM/BGM_Title.wav", -1 },	// Title BGM
 	{ (char*)"data/BGM/bgm_maoudamashii_neorock73.wav", -1 },	// BGM1
 	{ (char*)"data/BGM/sample001.wav", -1 },	// BGM2
 	{ (char*)"data/SE/walk.wav", 0 },			// 歩き音

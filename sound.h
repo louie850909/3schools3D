@@ -16,7 +16,7 @@
 //*****************************************************************************
 enum 
 {
-	SOUND_LABEL_BGM_sample000,	// BGM0
+	SOUND_LABEL_BGM_Title,	// BGM0
 	SOUND_LABEL_BGM_sample001,	// BGM1
 	SOUND_LABEL_BGM_sample002,	// BGM2
 	SOUND_LABEL_SE_walk,		// •à‚«

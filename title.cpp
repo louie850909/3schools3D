@@ -101,7 +101,7 @@ HRESULT InitTitle(void)
 	flag_alpha = true;
 
 	// BGMçƒê∂
-	PlaySound(SOUND_LABEL_BGM_sample000);
+	PlaySound(SOUND_LABEL_BGM_Title);
 
 	g_Load = TRUE;
 
