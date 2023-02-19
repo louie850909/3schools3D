@@ -99,7 +99,7 @@ HRESULT InitGame(void)
 	InitSSAO();
 
 	// BGMçƒê∂
-	PlaySound(SOUND_LABEL_BGM_sample001);
+	PlaySound(SOUND_LABEL_BGM_Game);
 
 	return S_OK;
 }

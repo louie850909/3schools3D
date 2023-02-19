@@ -33,8 +33,9 @@ DWORD g_aSizeAudio[SOUND_LABEL_MAX] = {};					// オーディオデータサイズ
 SOUNDPARAM g_aParam[SOUND_LABEL_MAX] =
 {
 	{ (char*)"data/BGM/BGM_Title.wav", -1 },	// Title BGM
-	{ (char*)"data/BGM/bgm_maoudamashii_neorock73.wav", -1 },	// BGM1
-	{ (char*)"data/BGM/sample001.wav", -1 },	// BGM2
+	{ (char*)"data/BGM/BGM_Tutorial.wav", -1 },	// Tutorial BGM
+	{ (char*)"data/BGM/BGM_Game.wav", -1 },		// Game BGM
+	{ (char*)"data/BGM/BGM_End.wav", -1 },		// End BGM
 	{ (char*)"data/SE/walk.wav", 0 },			// 歩き音
 	{ (char*)"data/SE/defend000.wav", 0 },		// 弾発射音
 	{ (char*)"data/SE/defend001.wav", 0 },		// 弾発射音
@@ -42,7 +43,6 @@ SOUNDPARAM g_aParam[SOUND_LABEL_MAX] =
 	{ (char*)"data/SE/laser000.wav", 0 },		// 弾発射音
 	{ (char*)"data/SE/lockon000.wav", 0 },		// 弾発射音
 	{ (char*)"data/SE/shot000.wav", 0 },		// 弾発射音
-	{ (char*)"data/SE/shot001.wav", 0 },		// ヒット音
 };
 
 //=============================================================================

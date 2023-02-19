@@ -81,7 +81,7 @@ HRESULT InitTutorial(void)
 	g_TexNo = 0;
 
 	// BGMçƒê∂
-	PlaySound(SOUND_LABEL_BGM_Title);
+	PlaySound(SOUND_LABEL_BGM_Tutorial);
 
 	g_Load = TRUE;
 	return S_OK;
