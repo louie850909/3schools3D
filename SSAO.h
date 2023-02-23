@@ -1,39 +1,56 @@
 //=============================================================================
 //
-// SSAO処理 [SSAO.h]
-// Author : 林　劭羲
+// SSAO蜃ｦ逅� [SSAO.h]
+// Author : 譫励蜉ｭ鄒ｲ
 //
 //=============================================================================
 #pragma once
 
 //*****************************************************************************
-// インクルードファイル
+// 繧､繝ｳ繧ｯ繝ｫ繝ｼ繝峨ヵ繧｡繧､繝ｫ
 //*****************************************************************************
 #include "main.h"
 #include "renderer.h"
 #include "camera.h"
 
-//*****************************************************************************
-// マクロ定義
-//*****************************************************************************
+#define OCC_RADIUS 0.8f
+#define OCC_FADE_START 0.1f
+#define OCC_FADE_END 0.5f
+#define SURFACE_EPSILON 0.01f
+
 enum SSAO_PASS
 {
 	NormalZMap,
 	INSTNormalZMap,
-	GrassNormalZMap,
+	ViewPosMap,
+	INSTViewPosMap,
 
 	SSAO_PASS_MAX,
 };
 
-//*****************************************************************************
-// プロトタイプ宣言
-//*****************************************************************************
+struct SSAO_CONSTANT_BUFFER
+{
+	XMMATRIX ViewToTex;
+	XMFLOAT4 FrustumCorners[4];
+	
+	float OcclusionRadius;
+	float OcclusionFadeStart;
+	float OcclusionFadeEnd;
+	float SurfaceEpsilon;
+};
+
+struct SSAO_OFFSET_VECTORS
+{
+	XMFLOAT4 OffsetVectors[14];
+};
+
 HRESULT InitSSAO();
 void UpdateSSAO();
 void DrawSSAO();
 void UninitSSAO();
 
 void DrawNormalZMap();
+void DrawViewPosMap();
 void DrawSSAOTex();
 void DrawSSAOBlurTex();
 

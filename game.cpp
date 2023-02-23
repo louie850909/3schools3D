@@ -1,7 +1,7 @@
 //=============================================================================
 //
-// ƒQ[ƒ€‰æ–Êˆ— [game.cpp]
-// Author : —Ñ@™¡ãº
+// ã‚²ãƒ¼ãƒ ç”»é¢å‡¦ç† [game.cpp]
+// Author : æž—ã€€åŠ­ç¾²
 //
 //=============================================================================
 #include "main.h"
@@ -33,28 +33,29 @@
 #include "SSAO.h"
 
 //*****************************************************************************
-// ƒ}ƒNƒ’è‹`
+// ãƒžã‚¯ãƒ­å®šç¾©
 //*****************************************************************************
 
 
 
 //*****************************************************************************
-// ƒvƒƒgƒ^ƒCƒvéŒ¾
+// ãƒ—ãƒ­ãƒˆã‚¿ã‚¤ãƒ—å®£è¨€
 //*****************************************************************************
 void CheckHit(void);
 
 
 
 //*****************************************************************************
-// ƒOƒ[ƒoƒ‹•Ï”
+// ã‚°ãƒ­ãƒ¼ãƒãƒ«å¤‰æ•°
 //*****************************************************************************
 static int	g_ViewPortType_Game = TYPE_FULL_SCREEN;
 
-static bool	g_bPause = true;	// ƒ|[ƒYON/OFF
+static bool	g_bPause = true;	// ãƒãƒ¼ã‚ºON/OFF
+static bool g_bDebug = false;	// ãƒ‡ãƒãƒƒã‚°ON/OFF
 
 
 //=============================================================================
-// ‰Šú‰»ˆ—
+// åˆæœŸåŒ–å‡¦ç†
 //=============================================================================
 HRESULT InitGame(void)
 {
@@ -64,76 +65,76 @@ HRESULT InitGame(void)
 
 	InitCamera();
 
-	// ƒtƒB[ƒ‹ƒh‚Ì‰Šú‰»
+	// ãƒ•ã‚£ãƒ¼ãƒ«ãƒ‰ã®åˆæœŸåŒ–
 	InitMeshField(XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 0.0f), 100, 100, 13.0f, 13.0f);
 
 	InitStage();
 
-	// ƒ‰ƒCƒg‚ð—LŒø‰»	// ‰e‚Ì‰Šú‰»ˆ—
+	// ãƒ©ã‚¤ãƒˆã‚’æœ‰åŠ¹åŒ–	// å½±ã®åˆæœŸåŒ–å‡¦ç†
 	InitShadow();
 
-	// ƒvƒŒƒCƒ„[‚Ì‰Šú‰»
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®åˆæœŸåŒ–
 	InitPlayer();
 
 	InitMiniMap();
 
-	// ƒGƒlƒ~[‚Ì‰Šú‰»
+	// ã‚¨ãƒãƒŸãƒ¼ã®åˆæœŸåŒ–
 	InitEnemy();
 
-	// –Ø‚ð¶‚â‚·
+	// æœ¨ã‚’ç”Ÿã‚„ã™
 	InitTree();
 
 	InitGrass();
 
-	// ’e‚Ì‰Šú‰»
+	// å¼¾ã®åˆæœŸåŒ–
 	InitBullet();
 
-	// ƒXƒRƒA‚Ì‰Šú‰»
+	// ã‚¹ã‚³ã‚¢ã®åˆæœŸåŒ–
 	InitScore();
 
-	// ƒp[ƒeƒBƒNƒ‹‚Ì‰Šú‰»
+	// ãƒ‘ãƒ¼ãƒ†ã‚£ã‚¯ãƒ«ã®åˆæœŸåŒ–
 	InitParticle();
 
 	InitSkyBall();
 
 	InitSSAO();
 
-	// BGMÄ¶
+	// BGMå†ç”Ÿ
 	PlaySound(SOUND_LABEL_BGM_Game);
 
 	return S_OK;
 }
 
 //=============================================================================
-// I—¹ˆ—
+// çµ‚äº†å‡¦ç†
 //=============================================================================
 void UninitGame(void)
 {
-	// ƒp[ƒeƒBƒNƒ‹‚ÌI—¹ˆ—
+	// ãƒ‘ãƒ¼ãƒ†ã‚£ã‚¯ãƒ«ã®çµ‚äº†å‡¦ç†
 	UninitParticle();
 
-	// ƒXƒRƒA‚ÌI—¹ˆ—
+	// ã‚¹ã‚³ã‚¢ã®çµ‚äº†å‡¦ç†
 	UninitScore();
 
-	// ’e‚ÌI—¹ˆ—
+	// å¼¾ã®çµ‚äº†å‡¦ç†
 	UninitBullet();
 
-	// –Ø‚ÌI—¹ˆ—
+	// æœ¨ã®çµ‚äº†å‡¦ç†
 	UninitTree();
 
 	UninitGrass();
 
-	// ƒGƒlƒ~[‚ÌI—¹ˆ—
+	// ã‚¨ãƒãƒŸãƒ¼ã®çµ‚äº†å‡¦ç†
 	UninitEnemy();
 
-	// ƒvƒŒƒCƒ„[‚ÌI—¹ˆ—
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®çµ‚äº†å‡¦ç†
 	UninitPlayer();
 
 	UninitSkyBall();
 
 	UninitStage();
 
-	// ‰e‚ÌI—¹ˆ—
+	// å½±ã®çµ‚äº†å‡¦ç†
 	UninitShadow();
 
 	UninitMiniMap();
@@ -143,7 +144,7 @@ void UninitGame(void)
 }
 
 //=============================================================================
-// XVˆ—
+// æ›´æ–°å‡¦ç†
 //=============================================================================
 void UpdateGame(void)
 {
@@ -165,42 +166,49 @@ void UpdateGame(void)
 	if(g_bPause == false)
 		return;
 
-	// ƒvƒŒƒCƒ„[‚ÌXVˆ—
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®æ›´æ–°å‡¦ç†
 	UpdatePlayer();
 
-	// ƒGƒlƒ~[‚ÌXVˆ—
+	// ã‚¨ãƒãƒŸãƒ¼ã®æ›´æ–°å‡¦ç†
 	UpdateEnemy();
 
-	// •Çˆ—‚ÌXV
+	// å£å‡¦ç†ã®æ›´æ–°
 	//UpdateMeshWall();
 
-	// –Ø‚ÌXVˆ—
+	// æœ¨ã®æ›´æ–°å‡¦ç†
 	UpdateTree();
 
 	UpdateGrass();
 
-	// ’e‚ÌXVˆ—
+	// å¼¾ã®æ›´æ–°å‡¦ç†
 	UpdateBullet();
 
-	// ƒp[ƒeƒBƒNƒ‹‚ÌXVˆ—
+	// ãƒ‘ãƒ¼ãƒ†ã‚£ã‚¯ãƒ«ã®æ›´æ–°å‡¦ç†
 	UpdateParticle();
 
-	// ‰e‚ÌXVˆ—
+	// å½±ã®æ›´æ–°å‡¦ç†
 	UpdateShadow();
 
 	UpdateSkyBall();
 
 	UpdateMiniMap();
 
-	// “–‚½‚è”»’èˆ—
+	// å½“ãŸã‚Šåˆ¤å®šå‡¦ç†
 	CheckHit();
 
-	// ƒXƒRƒA‚ÌXVˆ—
+	// ã‚¹ã‚³ã‚¢ã®æ›´æ–°å‡¦ç†
 	UpdateScore();
+
+#ifdef _DEBUG
+	if (GetKeyboardTrigger(DIK_F1))
+	{
+		g_bDebug = g_bDebug ? false : true;
+	}
+#endif
 }
 
 //=============================================================================
-// •`‰æˆ—
+// æç”»å‡¦ç†
 //=============================================================================
 void DrawGame0(void)
 {
@@ -212,47 +220,65 @@ void DrawGame0(void)
 	
 	DrawShadowMap();
 	
-	// 3D‚Ì•¨‚ð•`‰æ‚·‚éˆ—
-
-	SetSSAO(true);
+	// 3Dã®ç‰©ã‚’æç”»ã™ã‚‹å‡¦ç†
+	// åœ°é¢ã®æç”»å‡¦ç†
+	//DrawMeshField();
+	if (g_bDebug == true)
+	{
+		SetSSAO(true);
+	}
+	else
+	{
+		SetSSAO(false);
+	}
 	DrawStage();
 	SetSSAO(false);
 
-	// ƒGƒlƒ~[‚Ì•`‰æˆ—
+	// ã‚¨ãƒãƒŸãƒ¼ã®æç”»å‡¦ç†
 	DrawEnemy();
 
-	// ƒvƒŒƒCƒ„[‚Ì•`‰æˆ—
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®æç”»å‡¦ç†
 	DrawPlayer();
 
-	// ’e‚Ì•`‰æˆ—
+	// å¼¾ã®æç”»å‡¦ç†
 	DrawBullet();
 
-	SetSSAO(true);
-	// –Ø‚Ì•`‰æˆ—
+	// å£ã®æç”»å‡¦ç†
+	//DrawMeshWall();
+
+	if (g_bDebug == true)
+	{
+		SetSSAO(true);
+	}
+	else
+	{
+		SetSSAO(false);
+	}
+	// æœ¨ã®æç”»å‡¦ç†
 	DrawTree();
-	// ‹ó‚Ì•`‰æˆ—
+	// ç©ºã®æç”»å‡¦ç†
 	DrawSkyBall();
 	
 	SetSSAO(false);
 
 	DrawGrass();
 
-	// 2D‚Ì•¨‚ð•`‰æ‚·‚éˆ—
-	// Z”äŠr‚È‚µ
+	// 2Dã®ç‰©ã‚’æç”»ã™ã‚‹å‡¦ç†
+	// Zæ¯”è¼ƒãªã—
 	SetDepthEnable(false);
 
-	// ƒ‰ƒCƒeƒBƒ“ƒO‚ð–³Œø
+	// ãƒ©ã‚¤ãƒ†ã‚£ãƒ³ã‚°ã‚’ç„¡åŠ¹
 	SetLightEnable(false);
 
-	// ƒXƒRƒA‚Ì•`‰æˆ—
+	// ã‚¹ã‚³ã‚¢ã®æç”»å‡¦ç†
 	DrawScore();
 
 	DrawMiniMap();
 	
-	// ƒ‰ƒCƒeƒBƒ“ƒO‚ð—LŒø‚É
+	// ãƒ©ã‚¤ãƒ†ã‚£ãƒ³ã‚°ã‚’æœ‰åŠ¹ã«
 	SetLightEnable(true);
 
-	// Z”äŠr‚ ‚è
+	// Zæ¯”è¼ƒã‚ã‚Š
 	SetDepthEnable(true);
 }
 
@@ -263,14 +289,14 @@ void DrawGame(void)
 
 
 #ifdef _DEBUG
-	// ƒfƒoƒbƒO•\Ž¦
+	// ãƒ‡ãƒãƒƒã‚°è¡¨ç¤º
 	PrintDebugProc("ViewPortType:%d\n", g_ViewPortType_Game);
 
 #endif
 
-	// ƒvƒŒƒCƒ„[Ž‹“_
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼è¦–ç‚¹
 	pos = GetPlayer()->pos;
-	//pos.y = 0.0f;			// ƒJƒƒ‰Œ‚¢‚ð–h‚®‚½‚ß‚ÉƒNƒŠƒA‚µ‚Ä‚¢‚é
+	//pos.y = 0.0f;			// ã‚«ãƒ¡ãƒ©é…”ã„ã‚’é˜²ããŸã‚ã«ã‚¯ãƒªã‚¢ã—ã¦ã„ã‚‹
 	SetCameraAT(pos);
 	SetCamera();
 
@@ -286,7 +312,7 @@ void DrawGame(void)
 		SetViewPort(TYPE_LEFT_HALF_SCREEN);
 		DrawGame0();
 
-		// ƒGƒlƒ~[Ž‹“_
+		// ã‚¨ãƒãƒŸãƒ¼è¦–ç‚¹
 		pos = GetEnemy()->pos;
 		pos.y = 0.0f;
 		SetCameraAT(pos);
@@ -300,7 +326,7 @@ void DrawGame(void)
 		SetViewPort(TYPE_UP_HALF_SCREEN);
 		DrawGame0();
 
-		// ƒGƒlƒ~[Ž‹“_
+		// ã‚¨ãƒãƒŸãƒ¼è¦–ç‚¹
 		pos = GetEnemy()->pos;
 		pos.y = 0.0f;
 		SetCameraAT(pos);
@@ -315,40 +341,40 @@ void DrawGame(void)
 
 
 //=============================================================================
-// “–‚½‚è”»’èˆ—
+// å½“ãŸã‚Šåˆ¤å®šå‡¦ç†
 //=============================================================================
 void CheckHit(void)
 {
-	ENEMY *enemy = GetEnemy();		// ƒGƒlƒ~[‚Ìƒ|ƒCƒ“ƒ^[‚ð‰Šú‰»
-	PLAYER *player = GetPlayer();	// ƒvƒŒƒCƒ„[‚Ìƒ|ƒCƒ“ƒ^[‚ð‰Šú‰»
-	BULLET *bullet = GetBullet();	// ’e‚Ìƒ|ƒCƒ“ƒ^[‚ð‰Šú‰»
+	ENEMY *enemy = GetEnemy();		// ã‚¨ãƒãƒŸãƒ¼ã®ãƒã‚¤ãƒ³ã‚¿ãƒ¼ã‚’åˆæœŸåŒ–
+	PLAYER *player = GetPlayer();	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ãƒã‚¤ãƒ³ã‚¿ãƒ¼ã‚’åˆæœŸåŒ–
+	BULLET *bullet = GetBullet();	// å¼¾ã®ãƒã‚¤ãƒ³ã‚¿ãƒ¼ã‚’åˆæœŸåŒ–
 
-	// ƒvƒŒƒCƒ„[‚Ì’e‚Æ“G
+	// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®å¼¾ã¨æ•µ
 	for (int i = 0; i < MAX_BULLET; i++)
 	{
-		//’e‚Ì—LŒøƒtƒ‰ƒO‚ðƒ`ƒFƒbƒN‚·‚é
+		//å¼¾ã®æœ‰åŠ¹ãƒ•ãƒ©ã‚°ã‚’ãƒã‚§ãƒƒã‚¯ã™ã‚‹
 		if (bullet[i].use == false)
 			continue;
 
-		// “G‚Æ“–‚½‚Á‚Ä‚é‚©’²‚×‚é
+		// æ•µã¨å½“ãŸã£ã¦ã‚‹ã‹èª¿ã¹ã‚‹
 		for (int j = 0; j < MAX_ENEMY; j++)
 		{
-			//“G‚Ì—LŒøƒtƒ‰ƒO‚ðƒ`ƒFƒbƒN‚·‚é
+			//æ•µã®æœ‰åŠ¹ãƒ•ãƒ©ã‚°ã‚’ãƒã‚§ãƒƒã‚¯ã™ã‚‹
 			if (enemy[j].use == false)
 				continue;
 
-			//BC‚Ì“–‚½‚è”»’è
+			//BCã®å½“ãŸã‚Šåˆ¤å®š
 			if (CollisionBC(bullet[i].pos, enemy[j].pos, bullet[i].fWidth, enemy[j].size))
 			{
-				// “–‚½‚Á‚½‚©‚ç–¢Žg—p‚É–ß‚·
+				// å½“ãŸã£ãŸã‹ã‚‰æœªä½¿ç”¨ã«æˆ»ã™
 				bullet[i].use = false;
 				ReleaseShadow(bullet[i].shadowIdx);
 
-				// “GƒLƒƒƒ‰ƒNƒ^[‚Í“|‚³‚ê‚é
+				// æ•µã‚­ãƒ£ãƒ©ã‚¯ã‚¿ãƒ¼ã¯å€’ã•ã‚Œã‚‹
 				enemy[j].use = false;
 				ReleaseShadow(enemy[j].shadowIdx);
 
-				// ƒXƒRƒA‚ð‘«‚·
+				// ã‚¹ã‚³ã‚¢ã‚’è¶³ã™
 				AddScore(10);
 			}
 		}
@@ -356,7 +382,7 @@ void CheckHit(void)
 	}
 
 
-	// ƒGƒlƒ~[‚ª‘S•”Ž€–S‚µ‚½‚çó‘Ô‘JˆÚ
+	// ã‚¨ãƒãƒŸãƒ¼ãŒå…¨éƒ¨æ­»äº¡ã—ãŸã‚‰çŠ¶æ…‹é·ç§»
 	int enemy_count = 0;
 	for (int i = 0; i < MAX_ENEMY; i++)
 	{
@@ -364,7 +390,7 @@ void CheckHit(void)
 		enemy_count++;
 	}
 
-	// ƒGƒlƒ~[‚ª‚O•CH
+	// ã‚¨ãƒãƒŸãƒ¼ãŒï¼åŒ¹ï¼Ÿ
 	if (enemy_count == 0)
 	{
 		SetFade(FADE_OUT, MODE_RESULT);
