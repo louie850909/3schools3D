@@ -192,23 +192,12 @@ float4x4 inverse(float4x4 m)
     return ret;
 }
 
-float OcculusionFunction(float distZ)
-{
-    float occ = 0.0f;
-    if(distZ > SSAO.SurfaceEpsilon)
-    {
-        float fadeLength = SSAO.OcclusionFadeEnd - SSAO.OcclusionFadeStart;
-        occ = saturate((SSAO.OcclusionFadeEnd - distZ) / fadeLength);
-    }
-    return occ;
-}
-
 float doAmbientOcclusion(in float2 tcoord, in float2 uv, in float3 p, in float3 cnorm)
 {
     float g_scale, g_bias, g_intensity;
     g_scale = 1.0f;
     g_bias = 0.05f;
-    g_intensity = 0.4f;
+    g_intensity = 0.35f;
     
     float3 diff = g_TexSSAOViewPos.Sample(g_SamplerState, tcoord + uv).xyz - p;
     const float3 v = normalize(diff);
@@ -309,45 +298,6 @@ PSOUTPUT SSAOPS(PSINPUT input)
     float access = 1.0f - ao;
     output.Diffuse.xyz = saturate(pow(access, 4.0f));
     output.Diffuse.w = 1.0f;
-    //matrix ViewToTex = mul(Projection, SSAO.ViewToTex);
-    
-    //float4 normalDepth = g_TexSSAONormalZMap.Sample(g_SamplerState, input.TexCoord);
-    
-    //float3 n = normalDepth.xyz;
-    ////float pz = g_TexSSAOViewPos.Sample(g_SamplerState, input.TexCoord).z;
-    
-    //float3 p = g_TexSSAOViewPos.Sample(g_SamplerState, input.TexCoord).xyz;
-    
-    //float3 randVec = g_TexSSAORandomMap.Sample(g_SamplerState, input.TexCoord).xyz;
-    //randVec = 2.0f * randVec - 1.0f;
-    
-    //float occSum;
-    
-    //for (int i = 0; i < SPHERE_COUNT;i++)
-    //{
-    //    float3 offset = reflect(OffsetVectors.OffsetVectors[i].xyz, randVec);
-        
-    //    float flip = sign(dot(offset, n));
-        
-    //    float3 q = p + flip * SSAO.OcclusionRadius * offset;
-        
-    //    float4 projQ = mul(float4(q, 1.0f), ViewToTex);
-    //    projQ /= projQ.w;
-        
-    //    //float rz = g_TexSSAOViewPos.Sample(g_SamplerState, projQ.xy).z;
-    //    float3 r = g_TexSSAOViewPos.Sample(g_SamplerState, projQ.xy).xyz;
-        
-    //    float distZ = p.z - r.z;
-    //    float dp = max(dot(n, normalize(r - p)), 0.0f);
-    //    float occ = dp * OcculusionFunction(distZ);
-        
-    //    occSum += occ;
-    //}
-    
-    //occSum /= SPHERE_COUNT;
-    //float access = 1.0f - occSum;
-    
-    //output.Diffuse = saturate(pow(access, 4.0f));
     
     return output;
 }
