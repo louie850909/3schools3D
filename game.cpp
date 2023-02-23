@@ -51,7 +51,7 @@ void CheckHit(void);
 static int	g_ViewPortType_Game = TYPE_FULL_SCREEN;
 
 static bool	g_bPause = true;	// ポーズON/OFF
-static bool g_bDebug = false;	// デバッグON/OFF
+static bool g_bDebug = true;	// デバッグON/OFF
 
 
 //=============================================================================

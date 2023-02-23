@@ -683,6 +683,9 @@ void DrawNormalZMap()
 	SetShaderMode(SHADER_MODE_DEFAULT);
 }
 
+//=============================================================================
+// View空間座標マップ描画
+//=============================================================================
 void DrawViewPosMap()
 {
 	// ピクセルシェーダーを設定
@@ -724,6 +727,9 @@ void DrawViewPosMap()
 	SetShaderMode(SHADER_MODE_DEFAULT);
 }
 
+//=============================================================================
+// SSAOテクスチャ描画
+//=============================================================================
 void DrawSSAOTex()
 {
 	// ピクセルシェーダーを設定
@@ -917,6 +923,9 @@ ID3D11VertexShader* GetSSAOVertexShader(int pass)
 	}
 }
 
+//=============================================================================
+// SSAO入力レイアウト取得
+//=============================================================================
 ID3D11InputLayout* GetSSAOInputLayout(int pass)
 {
 	switch (pass)
@@ -931,6 +940,9 @@ ID3D11InputLayout* GetSSAOInputLayout(int pass)
 	}
 }
 
+//=============================================================================
+// コンスタントバッファ設定
+//=============================================================================
 void SetSSAOConstant(void)
 {
 	XMMATRIX Tex = XMMATRIX(
@@ -954,6 +966,9 @@ void SetSSAOConstant(void)
 	GetDeviceContext()->UpdateSubresource(g_SSAOConstantBuffer, 0, NULL, &g_SSAOConstant, 0, 0);
 }
 
+//=============================================================================
+// オフセット設定
+//=============================================================================
 void SetSSAOOffsetVectors(void)
 {
 	XMFLOAT4 mOffsets[14];
@@ -991,13 +1006,4 @@ void SetSSAOOffsetVectors(void)
 	}
 
 	GetDeviceContext()->UpdateSubresource(g_SSAOOffsetBuffer, 0, NULL, &g_SSAOOffset, 0, 0);
-}
-
-static XMMATRIX InverseTranspose(CXMMATRIX M)
-{
-	XMMATRIX A = M;
-	A.r[3] = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
-
-	XMVECTOR det = XMMatrixDeterminant(A);
-	return XMMatrixTranspose(XMMatrixInverse(&det, A));
 }
