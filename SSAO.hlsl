@@ -140,19 +140,8 @@ Texture2D g_TexSSAONormalZMap : register(t3);
 Texture2D g_TexSSAORandomMap  : register(t4);
 Texture2D g_TexSSAOTexMap     : register(t5);
 Texture2D g_TexSSAOBlurMap    : register(t6);
+Texture2D g_TexSSAOViewPos    : register(t7);
 SamplerState g_SamplerState   : register(s0);
-
-float3 CreateNormal(float2 xy)
-{
-    float3 normal;
-
-    normal.xy = xy;
-   // max() 入れないとなぜか正しく描画されないときがある
-    normal.z = -sqrt(max(1 - normal.x * normal.x - normal.y * normal.y, 0));
-    normal = normalize(normal);
-
-    return normal;
-}
 
 float4x4 inverse(float4x4 m)
 {
@@ -194,6 +183,36 @@ float4x4 inverse(float4x4 m)
     return ret;
 }
 
+float OcculusionFunction(float distZ)
+{
+    float occ = 0.0f;
+    if(distZ > SSAO.SurfaceEpsilon)
+    {
+        float fadeLength = SSAO.OcclusionFadeEnd - SSAO.OcclusionFadeStart;
+        occ = saturate((SSAO.OcclusionFadeEnd - distZ) / fadeLength);
+    }
+    return occ;
+}
+
+float4 getViewPos(float2 texCoord, float z)
+{
+    float4 worldPos;
+    
+    // まず正規化スクリーン座標系での座標を計算する。
+    // z座標は深度テクスチャから引っ張ってくる。
+    worldPos.z = z;
+    // xy座標はUV座標から計算する。
+    worldPos.xy = texCoord * float2(2.0f, -2.0f) - 1.0f;
+    worldPos.w = 1.0f;
+    // ビュープロジェクション行列の逆行列を乗算して、ワールド座標に戻す。
+    worldPos = mul(inverse(Projection), worldPos);
+    worldPos.xyz /= worldPos.w;
+    
+    float4 ViewPos;
+    ViewPos = mul(worldPos, View);
+    return ViewPos;
+}
+
 Texture2D g_Texture : register(t0);
 PSINPUT NormalZMapVS(VSINPUT input)
 {
@@ -201,6 +220,24 @@ PSINPUT NormalZMapVS(VSINPUT input)
     float4x4 wvp;
     wvp = mul(World, View);
     wvp = mul(wvp, Projection);
+    
+    matrix invTrnWorld = transpose(inverse(World));
+    invTrnWorld[3][0] = 0.0f;
+    invTrnWorld[3][1] = 0.0f;
+    invTrnWorld[3][2] = 0.0f;
+    invTrnWorld[0][3] = 0.0f;
+    invTrnWorld[1][3] = 0.0f;
+    invTrnWorld[2][3] = 0.0f;
+    invTrnWorld[3][3] = 1.0f;
+    
+    matrix invTrnView = transpose(inverse(View));
+    invTrnView[3][0] = 0.0f;
+    invTrnView[3][1] = 0.0f;
+    invTrnView[3][2] = 0.0f;
+    invTrnView[0][3] = 0.0f;
+    invTrnView[1][3] = 0.0f;
+    invTrnView[2][3] = 0.0f;
+    invTrnView[3][3] = 1.0f;
     
     float3x3 wv = mul((float3x3)World, (float3x3)View);
     float4x4 wv4 = float4x4(
@@ -211,8 +248,8 @@ PSINPUT NormalZMapVS(VSINPUT input)
     );
     
     output.Position = mul(input.Position, wvp);
-    output.Normal = input.Normal;
-    output.Normal = normalize(mul(input.Normal, inverse(transpose(wv4))));
+    output.Normal = mul(input.Normal, invTrnWorld);
+    output.Normal = normalize(mul(output.Normal, invTrnView));
     output.TexCoord = input.TexCoord;
     output.ViewPos = mul(input.Position, World);
     output.ViewPos = mul(output.ViewPos, View);
@@ -232,6 +269,7 @@ PSOUTPUT NormalZMapPS(PSINPUT input)
     float4x4 Wxv = mul(World, View);
     
     float4 Out;
+    //Out.xyz = input.Normal.xyz;
     Out.xyz = (input.Normal.xyz / 2.0f) + 0.5f;
     Out.w = input.ViewPos.z;
     
@@ -251,80 +289,50 @@ PSINPUT SSAOVS(VSINPUT input)
 }
 
 // サンプリング数
-#define SPHERE_COUNT 16
+#define SPHERE_COUNT 14
 PSOUTPUT SSAOPS(PSINPUT input)
 {
-    // 周囲ピクセルへのオフセット値
-    static float3 SphereArray16[SPHERE_COUNT] =
-    {
-        float3(0.53812504, 0.18565957, -0.43192)
-      , float3(0.13790712, 0.24864247, 0.44301823)
-      , float3(0.33715037, 0.56794053, -0.005789503)
-      , float3(-0.6999805, -0.04511441, -0.0019965635)
-      , float3(0.06896307, -0.15983082, -0.85477847)
-      , float3(0.056099437, 0.006954967, -0.1843352)
-      , float3(-0.014653638, 0.14027752, 0.0762037)
-      , float3(0.010019933, -0.1924225, -0.034443386)
-      , float3(-0.35775623, -0.5301969, -0.43581226)
-      , float3(-0.3169221, 0.106360726, 0.015860917)
-      , float3(0.010350345, -0.58698344, 0.0046293875)
-      , float3(-0.08972908, -0.49408212, 0.3287904)
-      , float3(0.7119986, -0.0154690035, -0.09183723)
-      , float3(-0.053382345, 0.059675813, -0.5411899)
-      , float3(0.035267662, -0.063188605, 0.54602677)
-      , float3(-0.47761092, 0.2847911, -0.0271716)
-    };
+    PSOUTPUT output;
     
-    float radius = 2.0f;
-    float zFar = 10000.0f;
-    float zNear = 0.1f;
-    float AOPower = 4.7f;
+    float3 normal = g_TexSSAONormalZMap.Sample(g_SamplerState, input.TexCoord).xyz;
+    float pz = g_TexSSAOViewPos.Sample(g_SamplerState, input.TexCoord).a;
     
-    float4 NormalZ = g_TexSSAONormalZMap.Sample(g_SamplerState, input.TexCoord);
-    float4 Random = g_TexSSAORandomMap.Sample(g_SamplerState, input.TexCoord);
+    float3 p = getViewPos(input.TexCoord, pz);
     
-    // 法線ベクトルを作成する
-    float3 Normal = CreateNormal(NormalZ.xy);
-    // 描画ピクセルのテクセル座標からクリップ空間上の座標を計算
-    float4 Pos;
-    Pos.xy = (input.TexCoord * float2(2, -2) + float2(-1, 1)) * NormalZ.w;
-    Pos.zw = NormalZ.zw;
+    float3 randVec = 2.0f * g_TexSSAORandomMap.Sample(g_SamplerState, input.TexCoord).rgb - 1.0f;
     
-    // カメラ空間上での座標を計算
-    float4x4 InvProj = inverse(Projection);
-    float4 CameraPos = mul(Pos, InvProj);
+    float occSum = 0.0f;
     
-    float normAO = 0;
-    float depthAO = 0;
-    
-    // サンプリング数分のループ
     for (int i = 0; i < SPHERE_COUNT;i++)
     {
-        float3 ray = SphereArray16[i].xyz * radius;
+        float3 offset = reflect(SSAO.OffsetVectors[i].xyz, randVec);
         
-        ray = sign(dot(Normal, ray)) * ray;
+        float flip = sign(dot(offset, normal));
         
-        float4 envPos;
-        envPos.xyz = CameraPos.xyz + ray;
-        envPos = mul(float4(envPos.xyz, 1), Projection);
-        envPos.xy = envPos.xy / envPos.w * float2(0.5, -0.5) + 0.5f;
+        float3 q = p + flip * SSAO.OcclusionRadius * offset;
         
-        float4 envNormalZ = g_TexSSAONormalZMap.Sample(g_SamplerState, envPos.xy);
-        float3 envNormal = CreateNormal(envNormalZ.xy);
+        float4 projQ = mul(float4(q, 1.0f), SSAO.ViewToTex);
+        projQ /= projQ.w;
+        projQ.x = projQ.x / 2.0f + 0.5f;
+        projQ.y = projQ.y / (-2.0f) + 0.5f;
         
-        float n = dot(Normal, envNormal) * 0.5 + 0.5;
+        float rz = g_TexSSAOViewPos.Sample(g_SamplerState, projQ.xy).w;
         
-        n += step(NormalZ.z, envNormalZ.z) / zFar;
-        normAO += min(n, 1);
+        float3 r = getViewPos(projQ.xy, rz);
         
-        depthAO += abs(NormalZ.z - envNormalZ.z) / zFar;
+        float distZ = p.z - r.z;
+        float dp = max(dot(normalize(normal), normalize(r - p)), 0);
+        float occ = dp * OcculusionFunction(distZ);
+        
+        occSum += occ;
     }
     
-    float Out = normAO / (float) SPHERE_COUNT + depthAO;
-    Out = pow(abs(Out), AOPower);
+    occSum /= (float)SPHERE_COUNT;
     
-    PSOUTPUT output;
-    output.Diffuse = Out;
+    float access = 1.0f - occSum;
+    
+    output.Diffuse = saturate(pow(access, 4.0f));
+    
     return output;
 }
 
@@ -448,6 +456,24 @@ SSAOPSINSTIN SSAO_INSTVS(SSAOVSINSTIN input)
     wvp = mul(world, View);
     wvp = mul(wvp, Projection);
     
+    matrix invTrnWorld = transpose(inverse(world));
+    invTrnWorld[3][0] = 0.0f;
+    invTrnWorld[3][1] = 0.0f;
+    invTrnWorld[3][2] = 0.0f;
+    invTrnWorld[0][3] = 0.0f;
+    invTrnWorld[1][3] = 0.0f;
+    invTrnWorld[2][3] = 0.0f;
+    invTrnWorld[3][3] = 1.0f;
+    
+    matrix invTrnView = transpose(inverse(View));
+    invTrnView[3][0] = 0.0f;
+    invTrnView[3][1] = 0.0f;
+    invTrnView[3][2] = 0.0f;
+    invTrnView[0][3] = 0.0f;
+    invTrnView[1][3] = 0.0f;
+    invTrnView[2][3] = 0.0f;
+    invTrnView[3][3] = 1.0f;
+    
     float3x3 wv = mul((float3x3) world, (float3x3) View);
     float4x4 wv4 = float4x4(
         float4(wv[0], 0),
@@ -457,7 +483,8 @@ SSAOPSINSTIN SSAO_INSTVS(SSAOVSINSTIN input)
     );
     
     output.Position = mul(input.Position, wvp);
-    output.Normal = normalize(mul(input.Normal, transpose(inverse(wv4))));
+    output.Normal = mul(input.Normal, invTrnWorld);
+    output.Normal = normalize(mul(output.Normal, invTrnView));
 
     output.TexCoord = input.TexCoord;
 
@@ -477,6 +504,57 @@ SSAOPSINSTIN SSAO_INSTVS(SSAOVSINSTIN input)
 
 SSAOPSINSTOUT SSAO_INSTPS(SSAOPSINSTIN input)
 {
+    float4 texColor = g_Texture.Sample(g_SamplerState, input.TexCoord);
+    if (texColor.a < 0.1)
+    {
+        discard;
+    }
+    
+    float4 Out;
+    Out.rgb = (input.Normal.xyz / 2.0f) + 0.5f;
+    Out.a = input.ViewPos.z;
+    
+    SSAOPSINSTOUT output;
+    output.Diffuse = Out;
+    
+    return output;
+}
+
+PSINPUT ViewPosMapVS(VSINPUT input)
+{
+    PSINPUT output;
+    float4x4 wvp;
+    wvp = mul(World, View);
+    wvp = mul(wvp, Projection);
+    
+    output.Position = mul(input.Position, wvp);
+    output.Normal = input.Normal;
+    output.TexCoord = input.TexCoord;
+    output.ViewPos = mul(input.Position, World);
+    output.ViewPos = mul(output.ViewPos, View);
+    
+    return output;
+}
+
+PSOUTPUT ViewPosMapPS(PSINPUT input)
+{
+    PSOUTPUT output;
+    float4 texColor = g_Texture.Sample(g_SamplerState, input.TexCoord);
+    if (texColor.a < 0.1)
+    {
+        discard;
+    }
+    
+    float4 Out;
+    Out = input.Position.z;
+    
+    output.Diffuse = Out;
+    return output;
+}
+
+SSAOPSINSTIN InstViewPosMapVS(SSAOVSINSTIN input)
+{
+    SSAOPSINSTIN output;
     matrix world;
     matrix rotationX;
     matrix rotationY;
@@ -520,103 +598,30 @@ SSAOPSINSTOUT SSAO_INSTPS(SSAOPSINSTIN input)
     world = mul(world, rotationY);
     world = mul(world, rotationZ);
     world = mul(world, trans);
-    
-    float4 texColor = g_Texture.Sample(g_SamplerState, input.TexCoord);
-    if (texColor.a < 0.1)
-    {
-        discard;
-    }
-    
-    float4 Out;
-    Out.rgb = (input.Normal.xyz / 2.0f) + 0.5f;
-    Out.a = input.ViewPos.z;
-    
-    SSAOPSINSTOUT output;
-    output.Diffuse = Out;
-    
-    return output;
-}
-
-SSAOPSINSTIN SSAO_GRASSVS(SSAOVSINSTIN input)
-{
-    SSAOPSINSTIN output;
-    matrix wd;
-    matrix wvp;
-    matrix trans;
-    matrix scl;
-	
-    trans = float4x4(1.0f, 0.0f, 0.0f, 0.0f,
-                     0.0f, 1.0f, 0.0f, 0.0f,
-                     0.0f, 0.0f, 1.0f, 0.0f,
-                     input.inInstancePos.x, input.inInstancePos.y, input.inInstancePos.z, 1.0f);
-	
-    scl = float4x4(input.inInstanceScl.x, 0.0f, 0.0f, 0.0f,
-                   0.0f, input.inInstanceScl.y, 0.0f, 0.0f,
-                   0.0f, 0.0f, input.inInstanceScl.z, 0.0f,
-                   0.0f, 0.0f, 0.0f, 1.0f);
-	// ビルドボード
-    wd = float4x4(View._11, View._21, View._31, 0.0f,
-                  View._12, View._22, View._32, 0.0f,
-                  View._13, View._23, View._33, 0.0f,
-                  0.0f, 0.0f, 0.0f, 1.0f);
-    
-    wd = mul(wd, scl);
-    wd = mul(wd, trans);
-    wvp = mul(wd, View);
+    wvp = mul(world, View);
     wvp = mul(wvp, Projection);
-    // xz bias for grass wave
-    float x = sin(Time.x + input.inInstancePos.x) * 2.0f;
-    float z = sin(Time.x + input.inInstancePos.x) * 2.0f;
     
-    if (input.TexCoord.y == 0.0f)
-    {
-        output.Position = mul(float4(input.Position.x + x, input.Position.y, input.Position.z + z, 1.0f), wvp);
-    }
-    else
-    {
-        output.Position = mul(input.Position, wvp);
-    }
-	
-    output.Normal = mul(input.Normal, wd);
+    output.Position = mul(input.Position, wvp);
+    output.Normal = input.Normal;
 
     output.TexCoord = input.TexCoord;
-	
-    output.ViewPos = output.Position;
+
+    output.ViewPos = mul(input.Position, world);
+    output.ViewPos = mul(output.ViewPos, View);
 
     output.Diffuse = input.Diffuse;
     
     output.inInstancePos = input.inInstancePos;
-    
+ 
     output.inInstanceScl = input.inInstanceScl;
     
-    output.inInstanceRot = float4(0.0f, 0.0f, 0.0f, 0.0f);
+    output.inInstanceRot = input.inInstanceRot;
     
     return output;
 }
 
-SSAOPSINSTOUT SSAO_GRASSPS(SSAOPSINSTIN input)
+SSAOPSINSTOUT InstViewPosMapPS(SSAOPSINSTIN input)
 {
-    matrix wd;
-    matrix trans;
-    matrix scl;
-	
-    trans = float4x4(1.0f, 0.0f, 0.0f, 0.0f,
-                     0.0f, 1.0f, 0.0f, 0.0f,
-                     0.0f, 0.0f, 1.0f, 0.0f,
-                     input.inInstancePos.x, input.inInstancePos.y, input.inInstancePos.z, 1.0f);
-	
-    scl = float4x4(input.inInstanceScl.x, 0.0f, 0.0f, 0.0f,
-                   0.0f, input.inInstanceScl.y, 0.0f, 0.0f,
-                   0.0f, 0.0f, input.inInstanceScl.z, 0.0f,
-                   0.0f, 0.0f, 0.0f, 1.0f);
-	// ビルドボード
-    wd = float4x4(View._11, View._21, View._31, 0.0f,
-                  View._12, View._22, View._32, 0.0f,
-                  View._13, View._23, View._33, 0.0f,
-                  0.0f, 0.0f, 0.0f, 1.0f);
-    
-    wd = mul(wd, scl);
-    wd = mul(wd, trans);
     
     float4 texColor = g_Texture.Sample(g_SamplerState, input.TexCoord);
     if (texColor.a < 0.1)
@@ -624,14 +629,12 @@ SSAOPSINSTOUT SSAO_GRASSPS(SSAOPSINSTIN input)
         discard;
     }
     
-    float4x4 Wxv = mul(wd, View);
-    
     float4 Out;
-    Out.xy = normalize(mul(float4(input.Normal.xyz, 0), Wxv).xyz).xy;
-    Out.zw = input.ViewPos.zw;
+    Out = input.Position.z;
     
     SSAOPSINSTOUT output;
     output.Diffuse = Out;
+    
     return output;
 }
 

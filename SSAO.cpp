@@ -3,6 +3,7 @@
 #include "tree.h"
 #include "grass.h"
 #include "camera.h"
+#include <time.h>
 
 // SSAOリソース
 static ID3D11Texture2D* g_NormalZMap = NULL;
@@ -85,7 +86,7 @@ HRESULT InitSSAO()
 			XMFLOAT3 v;
 			v.x = (float)(rand() % 256) / 255.0f;
 			v.y = (float)(rand() % 256) / 255.0f;
-			v.z = 0.0f;
+			v.z = (float)(rand() % 256) / 255.0f;
 
 			XMVECTOR vN = XMVector3Normalize(XMLoadFloat3(&v));
 
@@ -139,7 +140,7 @@ HRESULT InitSSAO()
 		GetDevice()->CreateRenderTargetView(g_ViewPosMap, NULL, &g_ViewPosMapRTV);
 		GetDevice()->CreateShaderResourceView(g_ViewPosMap, NULL, &g_ViewPosMapSRV);
 
-		texDesc.Format = DXGI_FORMAT_UNKNOWN;
+		texDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 		texDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 		GetDevice()->CreateTexture2D(&texDesc, NULL, &g_ViewPosMapDS);
 		GetDevice()->CreateDepthStencilView(g_ViewPosMapDS, NULL, &g_ViewPosMapDSV);
@@ -181,6 +182,7 @@ HRESULT InitSSAO()
 	DWORD shFlag = D3DCOMPILE_ENABLE_STRICTNESS;
 #if defined(DEBUG) || defined(_DEBUG)
 	shFlag |= D3DCOMPILE_DEBUG;
+	shFlag |= D3DCOMPILE_SKIP_OPTIMIZATION;
 #endif
 
 	// インスタンシング頂点シェーダー
@@ -404,6 +406,8 @@ HRESULT InitSSAO()
 	GetDevice()->CreateBuffer(&hBufferDesc, NULL, &g_SSAOConstantBuffer);
 	GetDeviceContext()->VSSetConstantBuffers(11, 1, &g_SSAOConstantBuffer);
 	GetDeviceContext()->PSSetConstantBuffers(11, 1, &g_SSAOConstantBuffer);
+
+	SetSSAOConstant();
 	
 	return S_OK;
 }
@@ -414,8 +418,8 @@ void UpdateSSAO()
 
 void DrawSSAO()
 {
-	SetSSAOConstant();
 	DrawNormalZMap();
+	DrawViewPosMap();
 	DrawSSAOTex();
 	DrawSSAOBlurTex();
 }
@@ -629,14 +633,53 @@ void DrawNormalZMap()
 
 	DrawTreeSSAO(INSTNormalZMap);
 
-	//DrawGrassSSAO(GrassNormalZMap);
-
 	// レンダーターゲットを設定
 	ID3D11RenderTargetView* nullRTV[] = { nullptr };
 	GetDeviceContext()->OMSetRenderTargets(1, nullRTV, nullptr);
 
 	// シェーダーにテクスチャを設定する
 	GetDeviceContext()->PSSetShaderResources(3, 1, &g_NormalZMapSRV);
+
+	SetShaderMode(SHADER_MODE_DEFAULT);
+}
+
+void DrawViewPosMap()
+{
+	// ピクセルシェーダーを設定
+	GetDeviceContext()->IASetInputLayout(g_InputLayoutViewPosMap);
+	GetDeviceContext()->VSSetShader(g_VertexShaderViewPosMap, NULL, 0);
+	GetDeviceContext()->PSSetShader(g_PixelShaderViewPosMap, NULL, 0);
+
+	// クリアシェーダーリソース
+	ID3D11ShaderResourceView* null[] = { nullptr };
+	GetDeviceContext()->PSSetShaderResources(7, 1, null);
+
+	D3D11_VIEWPORT vp;
+	vp.TopLeftX = 0;
+	vp.TopLeftY = 0;
+	vp.Width = SCREEN_WIDTH;
+	vp.Height = SCREEN_HEIGHT;
+	vp.MinDepth = 0.0f;
+	vp.MaxDepth = 1.0f;
+	GetDeviceContext()->RSSetViewports(1, &vp);
+
+	// レンダーターゲットを設定
+	GetDeviceContext()->OMSetRenderTargets(1, &g_ViewPosMapRTV, g_ViewPosMapDSV);
+
+	// レンダリングターゲットをクリア
+	float Clear[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	GetDeviceContext()->ClearRenderTargetView(g_ViewPosMapRTV, Clear);
+	GetDeviceContext()->ClearDepthStencilView(g_ViewPosMapDSV, D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+	DrawStage();
+	DrawTreeSSAO(INSTViewPosMap);
+
+	// レンダーターゲットを設定
+	ID3D11RenderTargetView* nullRTV[] = { nullptr };
+	GetDeviceContext()->OMSetRenderTargets(1, nullRTV, nullptr);
+
+	// シェーダーにテクスチャを設定する
+	GetDeviceContext()->PSSetShaderResources(7, 1, &g_ViewPosMapSRV);
 
 	SetShaderMode(SHADER_MODE_DEFAULT);
 }
@@ -800,6 +843,14 @@ ID3D11PixelShader* GetSSAOPixelShader(int pass)
 	case INSTNormalZMap:
 		return g_SSAOInstPS;
 		break;
+
+	case ViewPosMap:
+		return g_PixelShaderViewPosMap;
+		break;
+
+	case INSTViewPosMap:
+		return g_PixelShaderInstViewPosMap;
+		break;
 	}
 }
 
@@ -810,6 +861,10 @@ ID3D11VertexShader* GetSSAOVertexShader(int pass)
 	case INSTNormalZMap:
 		return g_SSAOInstVS;
 		break;
+
+	case INSTViewPosMap:
+		return g_VertexShaderInstViewPosMap;
+		break;
 	}
 }
 
@@ -819,6 +874,10 @@ ID3D11InputLayout* GetSSAOInputLayout(int pass)
 	{
 	case INSTNormalZMap:
 		return g_SSAOInstLayout;
+		break;
+
+	case INSTViewPosMap:
+		return g_InputLayoutInstViewPosMap;
 		break;
 	}
 }
@@ -865,7 +924,7 @@ void SetSSAOConstant(void)
 	for (int i = 0; i < 14; i++)
 	{
 		// 0.25から1.0の範囲にランダムにする
-		float s = 0.25f + (rand() % RAND_MAX) / RAND_MAX * 0.75f;
+		float s = 0.25f + (float)(rand() % 512) / 511 * 0.75f;
 		XMVECTOR v = s * XMVector4Normalize(XMLoadFloat4(&mOffsets[i]));
 		XMStoreFloat4(&mOffsets[i], v);
 		

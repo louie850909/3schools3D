@@ -12,7 +12,8 @@ enum SSAO_PASS
 {
 	NormalZMap,
 	INSTNormalZMap,
-	GrassNormalZMap,
+	ViewPosMap,
+	INSTViewPosMap,
 
 	SSAO_PASS_MAX,
 };
@@ -35,6 +36,7 @@ void DrawSSAO();
 void UninitSSAO();
 
 void DrawNormalZMap();
+void DrawViewPosMap();
 void DrawSSAOTex();
 void DrawSSAOBlurTex();
 
