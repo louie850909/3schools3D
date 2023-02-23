@@ -1,3 +1,9 @@
+//=============================================================================
+//
+// SSAOå‡¦ç† [SSAO.cpp]
+// Author : æ—ã€€åŠ­ç¾²
+//
+//=============================================================================
 #include "SSAO.h"
 #include "stage.h"
 #include "tree.h"
@@ -5,7 +11,19 @@
 #include "camera.h"
 #include <time.h>
 
-// SSAOƒŠƒ\[ƒX
+//*****************************************************************************
+// ãƒã‚¯ãƒ­å®šç¾©
+//*****************************************************************************
+
+
+//*****************************************************************************
+// ãƒ—ãƒ­ãƒˆã‚¿ã‚¤ãƒ—å®£è¨€
+//*****************************************************************************
+
+
+//*****************************************************************************
+// ã‚°ãƒ­ãƒ¼ãƒãƒ«å¤‰æ•°
+//*****************************************************************************
 static ID3D11Texture2D* g_NormalZMap = NULL;
 static ID3D11Texture2D* g_NormalZMapDS = NULL;
 static ID3D11RenderTargetView* g_NormalZMapRTV = NULL;
@@ -81,7 +99,7 @@ HRESULT InitSSAO()
 	D3D11_SUBRESOURCE_DATA initData = { 0 };
 	initData.SysMemPitch = 256 * 4;
 
-	// ƒ‰ƒ“ƒ_ƒ€ƒeƒNƒXƒ`ƒƒ‚Ìì¬
+	// ãƒ©ãƒ³ãƒ€ãƒ ãƒ†ã‚¯ã‚¹ãƒãƒ£ã®ä½œæˆ
 	{
 		BYTE* pRandomTex = new BYTE[256 * 256 * 4];
 		for (int i = 0; i < 256 * 256; i++)
@@ -109,7 +127,7 @@ HRESULT InitSSAO()
 		delete[] pRandomTex;
 	}
 
-	// –@üZƒ}ƒbƒv‚Ìì¬
+	// æ³•ç·šZãƒãƒƒãƒ—ã®ä½œæˆ
 	{
 		texDesc.Width = SCREEN_WIDTH;
 		texDesc.Height = SCREEN_HEIGHT;
@@ -129,7 +147,7 @@ HRESULT InitSSAO()
 		GetDevice()->CreateDepthStencilView(g_NormalZMapDS, NULL, &g_NormalZMapDSV);
 	}
 
-	// View‹óŠÔÀ•Wƒ}ƒbƒv‚Ìì¬
+	// Viewç©ºé–“åº§æ¨™ãƒãƒƒãƒ—ã®ä½œæˆ
 	{
 		texDesc.Width = SCREEN_WIDTH;
 		texDesc.Height = SCREEN_HEIGHT;
@@ -149,7 +167,7 @@ HRESULT InitSSAO()
 		GetDevice()->CreateDepthStencilView(g_ViewPosMapDS, NULL, &g_ViewPosMapDSV);
 	}
 
-	// SSAOƒ}ƒbƒv‚Ìì¬
+	// SSAOãƒãƒƒãƒ—ã®ä½œæˆ
 	{
 		texDesc.Width = SCREEN_WIDTH;
 		texDesc.Height = SCREEN_HEIGHT;
@@ -164,7 +182,7 @@ HRESULT InitSSAO()
 		GetDevice()->CreateShaderResourceView(g_SSAOTex, NULL, &g_SSAOTexSRV);
 	}
 
-	// SSAOƒuƒ‰[—pƒ}ƒbƒv‚Ìì¬
+	// SSAOãƒ–ãƒ©ãƒ¼ç”¨ãƒãƒƒãƒ—ã®ä½œæˆ
 	{
 		texDesc.Width = SCREEN_WIDTH;
 		texDesc.Height = SCREEN_HEIGHT;
@@ -188,7 +206,7 @@ HRESULT InitSSAO()
 	shFlag |= D3DCOMPILE_SKIP_OPTIMIZATION;
 #endif
 
-	// ƒCƒ“ƒXƒ^ƒ“ƒVƒ“ƒO’¸“_ƒVƒF[ƒ_[
+	// ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚·ãƒ³ã‚°é ‚ç‚¹ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼
 	HRESULT hr = D3DX11CompileFromFile("SSAO.hlsl", NULL, NULL, "SSAO_INSTVS", "vs_4_0", shFlag, 0, NULL, &pVSBlob, &pErrorBlob, NULL);
 	if (FAILED(hr))
 	{
@@ -197,7 +215,7 @@ HRESULT InitSSAO()
 
 	GetDevice()->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, &g_SSAOInstVS);
 
-	// “ü—ÍƒŒƒCƒAƒEƒg¶¬
+	// å…¥åŠ›ãƒ¬ã‚¤ã‚¢ã‚¦ãƒˆç”Ÿæˆ
 	D3D11_INPUT_ELEMENT_DESC layout[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,       0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -219,7 +237,7 @@ HRESULT InitSSAO()
 	pVSBlob->Release();
 	pVSBlob = NULL;
 
-	// ƒCƒ“ƒXƒ^ƒ“ƒVƒ“ƒOƒsƒNƒZƒ‹ƒVƒF[ƒ_[
+	// ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚·ãƒ³ã‚°ãƒ”ã‚¯ã‚»ãƒ«ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼
 	hr = D3DX11CompileFromFile("SSAO.hlsl", NULL, NULL, "SSAO_INSTPS", "ps_4_0", shFlag, 0, NULL, &pPSBlob, &pErrorBlob, NULL);
 	if (FAILED(hr))
 	{
@@ -229,7 +247,7 @@ HRESULT InitSSAO()
 	pPSBlob->Release();
 	pPSBlob = NULL;
 
-	// View‹óŠÔÀ•W’¸“_ƒVƒF[ƒ_[
+	// Viewç©ºé–“åº§æ¨™é ‚ç‚¹ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼
 	hr = D3DX11CompileFromFile("SSAO.hlsl", NULL, NULL, "ViewPosMapVS", "vs_4_0", shFlag, 0, NULL, &pVSBlob, &pErrorBlob, NULL);
 	if (FAILED(hr))
 	{
@@ -237,7 +255,7 @@ HRESULT InitSSAO()
 	}
 	GetDevice()->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, &g_VertexShaderViewPosMap);
 
-	// View‹óŠÔÀ•W‚Ì“ü—ÍƒŒƒCƒAƒEƒg¶¬
+	// Viewç©ºé–“åº§æ¨™ã®å…¥åŠ›ãƒ¬ã‚¤ã‚¢ã‚¦ãƒˆç”Ÿæˆ
 	D3D11_INPUT_ELEMENT_DESC ViewPosMapLayout[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,		0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -254,7 +272,7 @@ HRESULT InitSSAO()
 	pVSBlob->Release();
 	pVSBlob = NULL;
 
-	// View‹óŠÔÀ•WƒsƒNƒZƒ‹ƒVƒF[ƒ_
+	// Viewç©ºé–“åº§æ¨™ãƒ”ã‚¯ã‚»ãƒ«ã‚·ã‚§ãƒ¼ãƒ€
 	hr = D3DX11CompileFromFile("SSAO.hlsl", NULL, NULL, "ViewPosMapPS", "ps_4_0", shFlag, 0, NULL, &pPSBlob, &pErrorBlob, NULL);
 	if (FAILED(hr))
 	{
@@ -264,7 +282,7 @@ HRESULT InitSSAO()
 	pPSBlob->Release();
 	pPSBlob = NULL;
 
-	// View‹óŠÔƒCƒ“ƒXƒ^ƒ“ƒVƒ“ƒOÀ•W’¸“_ƒVƒF[ƒ_[
+	// Viewç©ºé–“ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚·ãƒ³ã‚°åº§æ¨™é ‚ç‚¹ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼
 	hr = D3DX11CompileFromFile("SSAO.hlsl", NULL, NULL, "InstViewPosMapVS", "vs_4_0", shFlag, 0, NULL, &pVSBlob, &pErrorBlob, NULL);
 	if (FAILED(hr))
 	{
@@ -272,7 +290,7 @@ HRESULT InitSSAO()
 	}
 	GetDevice()->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, &g_VertexShaderInstViewPosMap);
 	
-	// View‹óŠÔƒCƒ“ƒXƒ^ƒ“ƒVƒ“ƒOÀ•W‚Ì“ü—ÍƒŒƒCƒAƒEƒg¶¬
+	// Viewç©ºé–“ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚·ãƒ³ã‚°åº§æ¨™ã®å…¥åŠ›ãƒ¬ã‚¤ã‚¢ã‚¦ãƒˆç”Ÿæˆ
 	D3D11_INPUT_ELEMENT_DESC InstViewPosMapLayout[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,       0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -294,7 +312,7 @@ HRESULT InitSSAO()
 	pVSBlob->Release();
 	pVSBlob = NULL;
 
-	// View‹óŠÔƒCƒ“ƒXƒ^ƒ“ƒVƒ“ƒOÀ•W‚ÌƒsƒNƒZƒ‹ƒVƒF[ƒ_[
+	// Viewç©ºé–“ã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚·ãƒ³ã‚°åº§æ¨™ã®ãƒ”ã‚¯ã‚»ãƒ«ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼
 	hr = D3DX11CompileFromFile("SSAO.hlsl", NULL, NULL, "InstViewPosMapPS", "ps_4_0", shFlag, 0, NULL, &pPSBlob, &pErrorBlob, NULL);
 	if (FAILED(hr))
 	{
@@ -304,7 +322,7 @@ HRESULT InitSSAO()
 	pPSBlob->Release();
 	pPSBlob = NULL;
 
-	// ƒm[ƒ}ƒ‹Zƒ}ƒbƒv‚Ì’¸“_ƒVƒF[ƒ_[
+	// ãƒãƒ¼ãƒãƒ«Zãƒãƒƒãƒ—ã®é ‚ç‚¹ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼
 	hr = D3DX11CompileFromFile("SSAO.hlsl", NULL, NULL, "NormalZMapVS", "vs_4_0", shFlag, 0, NULL, &pVSBlob, &pErrorBlob, NULL);
 	if (FAILED(hr))
 	{
@@ -312,7 +330,7 @@ HRESULT InitSSAO()
 	}
 	GetDevice()->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, &g_VertexShaderSSAONormalZMap);
 
-	// ƒm[ƒ}ƒ‹Zƒ}ƒbƒv‚Ì“ü—ÍƒŒƒCƒAƒEƒg¶¬
+	// ãƒãƒ¼ãƒãƒ«Zãƒãƒƒãƒ—ã®å…¥åŠ›ãƒ¬ã‚¤ã‚¢ã‚¦ãƒˆç”Ÿæˆ
 	D3D11_INPUT_ELEMENT_DESC normalZMapLayout[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,       0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -331,7 +349,7 @@ HRESULT InitSSAO()
 	pVSBlob->Release();
 	pVSBlob = NULL;
 	
-	// ƒm[ƒ}ƒ‹Zƒ}ƒbƒv—p‚ÌƒsƒNƒZƒ‹ƒVƒF[ƒ_[‚ğì¬
+	// ãƒãƒ¼ãƒãƒ«Zãƒãƒƒãƒ—ç”¨ã®ãƒ”ã‚¯ã‚»ãƒ«ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼ã‚’ä½œæˆ
 	hr = D3DX11CompileFromFile("SSAO.hlsl", NULL, NULL, "NormalZMapPS", "ps_4_0", shFlag, 0, NULL, &pPSBlob, &pErrorBlob, NULL);
 	if (FAILED(hr))
 	{
@@ -341,7 +359,7 @@ HRESULT InitSSAO()
 	pPSBlob->Release();
 	pPSBlob = NULL;
 
-	// SSAO—p‚Ì’¸“_ƒVƒF[ƒ_[
+	// SSAOç”¨ã®é ‚ç‚¹ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼
 	hr = D3DX11CompileFromFile("SSAO.hlsl", NULL, NULL, "SSAOVS", "vs_4_0", shFlag, 0, NULL, &pVSBlob, &pErrorBlob, NULL);
 	if (FAILED(hr))
 	{
@@ -349,7 +367,7 @@ HRESULT InitSSAO()
 	}
 	GetDevice()->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, &g_VertexShaderSSAO);
 	
-	// SSAO—p‚Ì“ü—ÍƒŒƒCƒAƒEƒg¶¬
+	// SSAOç”¨ã®å…¥åŠ›ãƒ¬ã‚¤ã‚¢ã‚¦ãƒˆç”Ÿæˆ
 	D3D11_INPUT_ELEMENT_DESC SSAOLayout[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,       0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -368,7 +386,7 @@ HRESULT InitSSAO()
 	pVSBlob->Release();
 	pVSBlob = NULL;
 	
-	// SSAO—p‚ÌƒsƒNƒZƒ‹ƒVƒF[ƒ_[‚ğì¬
+	// SSAOç”¨ã®ãƒ”ã‚¯ã‚»ãƒ«ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼ã‚’ä½œæˆ
 	hr = D3DX11CompileFromFile("SSAO.hlsl", NULL, NULL, "SSAOPS", "ps_4_0", shFlag, 0, NULL, &pPSBlob, &pErrorBlob, NULL);
 	if (FAILED(hr))
 	{
@@ -378,7 +396,7 @@ HRESULT InitSSAO()
 	pPSBlob->Release();
 	pPSBlob = NULL;
 	
-	// SSAOƒuƒ‰[—p‚ÌƒsƒNƒZƒ‹ƒVƒF[ƒ_[‚ğì¬
+	// SSAOãƒ–ãƒ©ãƒ¼ç”¨ã®ãƒ”ã‚¯ã‚»ãƒ«ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼ã‚’ä½œæˆ
 	hr = D3DX11CompileFromFile("SSAO.hlsl", NULL, NULL, "SSAOBlurPS", "ps_4_0", shFlag, 0, NULL, &pPSBlob, &pErrorBlob, NULL);
 	if (FAILED(hr))
 	{
@@ -388,7 +406,7 @@ HRESULT InitSSAO()
 	pPSBlob->Release();
 	pPSBlob = NULL;
 	
-	// ’¸“_ƒoƒbƒtƒ@¶¬
+	// é ‚ç‚¹ãƒãƒƒãƒ•ã‚¡ç”Ÿæˆ
 	D3D11_BUFFER_DESC bd;
 	ZeroMemory(&bd, sizeof(bd));
 	bd.Usage = D3D11_USAGE_DYNAMIC;
@@ -397,7 +415,7 @@ HRESULT InitSSAO()
 	bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	GetDevice()->CreateBuffer(&bd, NULL, &g_VertexBuffer);
 
-	// ƒRƒ“ƒXƒ^ƒ“ƒgƒoƒbƒtƒ@¶¬
+	// ã‚³ãƒ³ã‚¹ã‚¿ãƒ³ãƒˆãƒãƒƒãƒ•ã‚¡ç”Ÿæˆ
 	D3D11_BUFFER_DESC hBufferDesc;
 	hBufferDesc.ByteWidth = sizeof(SSAO_CONSTANT_BUFFER);
 	hBufferDesc.Usage = D3D11_USAGE_DEFAULT;
@@ -422,10 +440,16 @@ HRESULT InitSSAO()
 	return S_OK;
 }
 
+//=============================================================================
+// æ›´æ–°å‡¦ç†
+//=============================================================================
 void UpdateSSAO()
 {
 }
 
+//=============================================================================
+// æç”»å‡¦ç†
+//=============================================================================
 void DrawSSAO()
 {
 	DrawNormalZMap();
@@ -434,6 +458,9 @@ void DrawSSAO()
 	DrawSSAOBlurTex();
 }
 
+//=============================================================================
+// çµ‚äº†å‡¦ç†
+//=============================================================================
 void UninitSSAO()
 {
 	if (g_NormalZMap)
@@ -611,14 +638,17 @@ void UninitSSAO()
 	}
 }
 
+//=============================================================================
+// ãƒãƒ¼ãƒãƒ«Zãƒãƒƒãƒ—æç”»
+//=============================================================================
 void DrawNormalZMap()
 {
-	// ƒsƒNƒZƒ‹ƒVƒF[ƒ_[‚ğİ’è
+	// ãƒ”ã‚¯ã‚»ãƒ«ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼ã‚’è¨­å®š
 	GetDeviceContext()->IASetInputLayout(g_InputLayoutSSAONormalZMap);
 	GetDeviceContext()->VSSetShader(g_VertexShaderSSAONormalZMap, NULL, 0);
 	GetDeviceContext()->PSSetShader(g_PixelShaderSSAONormalZMap, NULL, 0);
 	
-	// ƒNƒŠƒAƒVƒF[ƒ_[ƒŠƒ\[ƒX
+	// ã‚¯ãƒªã‚¢ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼ãƒªã‚½ãƒ¼ã‚¹
 	ID3D11ShaderResourceView* null[] = { nullptr };
 	GetDeviceContext()->PSSetShaderResources(3, 1, null);
 
@@ -631,10 +661,10 @@ void DrawNormalZMap()
 	vp.MaxDepth = 1.0f;
 	GetDeviceContext()->RSSetViewports(1, &vp);
 
-	// ƒŒƒ“ƒ_[ƒ^[ƒQƒbƒg‚ğİ’è
+	// ãƒ¬ãƒ³ãƒ€ãƒ¼ã‚¿ãƒ¼ã‚²ãƒƒãƒˆã‚’è¨­å®š
 	GetDeviceContext()->OMSetRenderTargets(1, &g_NormalZMapRTV, g_NormalZMapDSV);
 	
-	// ƒŒƒ“ƒ_ƒŠƒ“ƒOƒ^[ƒQƒbƒg‚ğƒNƒŠƒA
+	// ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°ã‚¿ãƒ¼ã‚²ãƒƒãƒˆã‚’ã‚¯ãƒªã‚¢
 	float Clear[4] = { 0.0f, 0.0f, -1.0f, VIEW_FAR_Z };
 	GetDeviceContext()->ClearRenderTargetView(g_NormalZMapRTV, Clear);
 	GetDeviceContext()->ClearDepthStencilView(g_NormalZMapDSV, D3D11_CLEAR_DEPTH, 1.0f, 0);
@@ -643,11 +673,11 @@ void DrawNormalZMap()
 
 	DrawTreeSSAO(INSTNormalZMap);
 
-	// ƒŒƒ“ƒ_[ƒ^[ƒQƒbƒg‚ğİ’è
+	// ãƒ¬ãƒ³ãƒ€ãƒ¼ã‚¿ãƒ¼ã‚²ãƒƒãƒˆã‚’è¨­å®š
 	ID3D11RenderTargetView* nullRTV[] = { nullptr };
 	GetDeviceContext()->OMSetRenderTargets(1, nullRTV, nullptr);
 
-	// ƒVƒF[ƒ_[‚ÉƒeƒNƒXƒ`ƒƒ‚ğİ’è‚·‚é
+	// ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼ã«ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’è¨­å®šã™ã‚‹
 	GetDeviceContext()->PSSetShaderResources(3, 1, &g_NormalZMapSRV);
 
 	SetShaderMode(SHADER_MODE_DEFAULT);
@@ -655,12 +685,12 @@ void DrawNormalZMap()
 
 void DrawViewPosMap()
 {
-	// ƒsƒNƒZƒ‹ƒVƒF[ƒ_[‚ğİ’è
+	// ãƒ”ã‚¯ã‚»ãƒ«ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼ã‚’è¨­å®š
 	GetDeviceContext()->IASetInputLayout(g_InputLayoutViewPosMap);
 	GetDeviceContext()->VSSetShader(g_VertexShaderViewPosMap, NULL, 0);
 	GetDeviceContext()->PSSetShader(g_PixelShaderViewPosMap, NULL, 0);
 
-	// ƒNƒŠƒAƒVƒF[ƒ_[ƒŠƒ\[ƒX
+	// ã‚¯ãƒªã‚¢ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼ãƒªã‚½ãƒ¼ã‚¹
 	ID3D11ShaderResourceView* null[] = { nullptr };
 	GetDeviceContext()->PSSetShaderResources(7, 1, null);
 
@@ -673,10 +703,10 @@ void DrawViewPosMap()
 	vp.MaxDepth = 1.0f;
 	GetDeviceContext()->RSSetViewports(1, &vp);
 
-	// ƒŒƒ“ƒ_[ƒ^[ƒQƒbƒg‚ğİ’è
+	// ãƒ¬ãƒ³ãƒ€ãƒ¼ã‚¿ãƒ¼ã‚²ãƒƒãƒˆã‚’è¨­å®š
 	GetDeviceContext()->OMSetRenderTargets(1, &g_ViewPosMapRTV, g_ViewPosMapDSV);
 
-	// ƒŒƒ“ƒ_ƒŠƒ“ƒOƒ^[ƒQƒbƒg‚ğƒNƒŠƒA
+	// ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°ã‚¿ãƒ¼ã‚²ãƒƒãƒˆã‚’ã‚¯ãƒªã‚¢
 	float Clear[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 	GetDeviceContext()->ClearRenderTargetView(g_ViewPosMapRTV, Clear);
 	GetDeviceContext()->ClearDepthStencilView(g_ViewPosMapDSV, D3D11_CLEAR_DEPTH, 1.0f, 0);
@@ -684,11 +714,11 @@ void DrawViewPosMap()
 	DrawStage();
 	DrawTreeSSAO(INSTViewPosMap);
 
-	// ƒŒƒ“ƒ_[ƒ^[ƒQƒbƒg‚ğİ’è
+	// ãƒ¬ãƒ³ãƒ€ãƒ¼ã‚¿ãƒ¼ã‚²ãƒƒãƒˆã‚’è¨­å®š
 	ID3D11RenderTargetView* nullRTV[] = { nullptr };
 	GetDeviceContext()->OMSetRenderTargets(1, nullRTV, nullptr);
 
-	// ƒVƒF[ƒ_[‚ÉƒeƒNƒXƒ`ƒƒ‚ğİ’è‚·‚é
+	// ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼ã«ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’è¨­å®šã™ã‚‹
 	GetDeviceContext()->PSSetShaderResources(7, 1, &g_ViewPosMapSRV);
 
 	SetShaderMode(SHADER_MODE_DEFAULT);
@@ -696,16 +726,16 @@ void DrawViewPosMap()
 
 void DrawSSAOTex()
 {
-	// ƒsƒNƒZƒ‹ƒVƒF[ƒ_[‚ğİ’è
+	// ãƒ”ã‚¯ã‚»ãƒ«ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼ã‚’è¨­å®š
 	GetDeviceContext()->IASetInputLayout(g_InputLayoutSSAO);
 	GetDeviceContext()->VSSetShader(g_VertexShaderSSAO, NULL, 0);
 	GetDeviceContext()->PSSetShader(g_PixelShaderSSAO, NULL, 0);
 
-	// ƒNƒŠƒAƒVƒF[ƒ_[ƒŠƒ\[ƒX
+	// ã‚¯ãƒªã‚¢ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼ãƒªã‚½ãƒ¼ã‚¹
 	ID3D11ShaderResourceView* null[] = { nullptr, nullptr };
 	GetDeviceContext()->PSSetShaderResources(5, 1, null);
 
-	// ƒrƒ…[ƒ|[ƒg‚ğİ’è
+	// ãƒ“ãƒ¥ãƒ¼ãƒãƒ¼ãƒˆã‚’è¨­å®š
 	D3D11_VIEWPORT vp;
 	vp.Width = (float)SCREEN_WIDTH;
 	vp.Height = (float)SCREEN_HEIGHT;
@@ -715,14 +745,14 @@ void DrawSSAOTex()
 	vp.TopLeftY = 0.0f;
 	GetDeviceContext()->RSSetViewports(1, &vp);
 
-	// ƒŒƒ“ƒ_[ƒ^[ƒQƒbƒg‚ğİ’è
+	// ãƒ¬ãƒ³ãƒ€ãƒ¼ã‚¿ãƒ¼ã‚²ãƒƒãƒˆã‚’è¨­å®š
 	GetDeviceContext()->OMSetRenderTargets(1, &g_SSAOTexRTV, NULL);
 
-	// ƒŒƒ“ƒ_ƒŠƒ“ƒOƒ^[ƒQƒbƒg‚ğƒNƒŠƒA
+	// ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°ã‚¿ãƒ¼ã‚²ãƒƒãƒˆã‚’ã‚¯ãƒªã‚¢
 	float Clear[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 	GetDeviceContext()->ClearRenderTargetView(g_SSAOTexRTV, Clear);
 
-	// ’¸“_ƒoƒbƒtƒ@‚ğİ’è
+	// é ‚ç‚¹ãƒãƒƒãƒ•ã‚¡ã‚’è¨­å®š
 	UINT stride = sizeof(VERTEX_3D);
 	UINT offset = 0;
 	GetDeviceContext()->IASetVertexBuffers(0, 1, &g_VertexBuffer, &stride, &offset);
@@ -758,26 +788,29 @@ void DrawSSAOTex()
 	
 	GetDeviceContext()->Draw(4, 0);
 
-	// ƒŒƒ“ƒ_[ƒ^[ƒQƒbƒg‚ğİ’è
+	// ãƒ¬ãƒ³ãƒ€ãƒ¼ã‚¿ãƒ¼ã‚²ãƒƒãƒˆã‚’è¨­å®š
 	ID3D11RenderTargetView* nullRTV[] = { nullptr };
 	GetDeviceContext()->OMSetRenderTargets(1, nullRTV, nullptr);
 
-	// ƒVƒF[ƒ_[‚ÉƒeƒNƒXƒ`ƒƒ‚ğİ’è‚·‚é
+	// ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼ã«ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’è¨­å®šã™ã‚‹
 	GetDeviceContext()->PSSetShaderResources(5, 1, &g_SSAOTexSRV);
 }
 
+//=============================================================================
+// SSAOãƒ–ãƒ©ãƒ¼æç”»
+//=============================================================================
 void DrawSSAOBlurTex()
 {
 	SetShaderMode(SHADER_MODE_DEFAULT);
 	
-	// ƒsƒNƒZƒ‹ƒVƒF[ƒ_[‚ğİ’è
+	// ãƒ”ã‚¯ã‚»ãƒ«ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼ã‚’è¨­å®š
 	GetDeviceContext()->PSSetShader(g_PixelShaderSSAOBlur, NULL, 0);
 
-	// ƒNƒŠƒAƒVƒF[ƒ_[ƒŠƒ\[ƒX
+	// ã‚¯ãƒªã‚¢ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼ãƒªã‚½ãƒ¼ã‚¹
 	ID3D11ShaderResourceView* null[] = { nullptr, nullptr };
 	GetDeviceContext()->PSSetShaderResources(6, 1, null);
 
-	// ƒrƒ…[ƒ|[ƒg‚ğİ’è
+	// ãƒ“ãƒ¥ãƒ¼ãƒãƒ¼ãƒˆã‚’è¨­å®š
 	D3D11_VIEWPORT vp;
 	vp.Width = (float)SCREEN_WIDTH;
 	vp.Height = (float)SCREEN_HEIGHT;
@@ -787,14 +820,14 @@ void DrawSSAOBlurTex()
 	vp.TopLeftY = 0.0f;
 	GetDeviceContext()->RSSetViewports(1, &vp);
 
-	// ƒŒƒ“ƒ_[ƒ^[ƒQƒbƒg‚ğİ’è
+	// ãƒ¬ãƒ³ãƒ€ãƒ¼ã‚¿ãƒ¼ã‚²ãƒƒãƒˆã‚’è¨­å®š
 	GetDeviceContext()->OMSetRenderTargets(1, &g_SSAOBlurTexRTV, NULL);
 
-	// ƒŒƒ“ƒ_ƒŠƒ“ƒOƒ^[ƒQƒbƒg‚ğƒNƒŠƒA
+	// ãƒ¬ãƒ³ãƒ€ãƒªãƒ³ã‚°ã‚¿ãƒ¼ã‚²ãƒƒãƒˆã‚’ã‚¯ãƒªã‚¢
 	float Clear[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 	GetDeviceContext()->ClearRenderTargetView(g_SSAOBlurTexRTV, Clear);
 
-	// ’¸“_ƒoƒbƒtƒ@‚ğİ’è
+	// é ‚ç‚¹ãƒãƒƒãƒ•ã‚¡ã‚’è¨­å®š
 	UINT stride = sizeof(VERTEX_3D);
 	UINT offset = 0;
 	GetDeviceContext()->IASetVertexBuffers(0, 1, &g_VertexBuffer, &stride, &offset);
@@ -832,16 +865,19 @@ void DrawSSAOBlurTex()
 
 	GetDeviceContext()->Draw(4, 0);
 
-	// ƒŒƒ“ƒ_[ƒ^[ƒQƒbƒg‚ğİ’è
+	// ãƒ¬ãƒ³ãƒ€ãƒ¼ã‚¿ãƒ¼ã‚²ãƒƒãƒˆã‚’è¨­å®š
 	ID3D11RenderTargetView* nullRTV[] = { nullptr };
 	GetDeviceContext()->OMSetRenderTargets(1, nullRTV, nullptr);
 
-	// ƒVƒF[ƒ_[‚ÉƒeƒNƒXƒ`ƒƒ‚ğİ’è‚·‚é
+	// ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼ã«ãƒ†ã‚¯ã‚¹ãƒãƒ£ã‚’è¨­å®šã™ã‚‹
 	GetDeviceContext()->PSSetShaderResources(6, 1, &g_SSAOBlurTexSRV);
 
 	SetShaderMode(SHADER_MODE_DEFAULT);
 }
 
+//=============================================================================
+// SSAOãƒ”ã‚¯ã‚»ãƒ«ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼å–å¾—
+//=============================================================================
 ID3D11PixelShader* GetSSAOPixelShader(int pass)
 {
 	switch (pass)
@@ -864,6 +900,9 @@ ID3D11PixelShader* GetSSAOPixelShader(int pass)
 	}
 }
 
+//=============================================================================
+// SSAOé ‚ç‚¹ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼å–å¾—
+//=============================================================================
 ID3D11VertexShader* GetSSAOVertexShader(int pass)
 {
 	switch (pass)
@@ -918,7 +957,7 @@ void SetSSAOConstant(void)
 void SetSSAOOffsetVectors(void)
 {
 	XMFLOAT4 mOffsets[14];
-	// 8 —§•û‘Ì‚Ì’¸“_
+	// 8 ç«‹æ–¹ä½“ã®é ‚ç‚¹
 	mOffsets[0] = XMFLOAT4(+1.0f, +1.0f, +1.0f, 0.0f);
 	mOffsets[1] = XMFLOAT4(-1.0f, -1.0f, -1.0f, 0.0f);
 
@@ -931,7 +970,7 @@ void SetSSAOOffsetVectors(void)
 	mOffsets[6] = XMFLOAT4(-1.0f, +1.0f, -1.0f, 0.0f);
 	mOffsets[7] = XMFLOAT4(+1.0f, -1.0f, +1.0f, 0.0f);
 
-	// 6 –Ê‚Ì’†S
+	// 6 é¢ã®ä¸­å¿ƒ
 	mOffsets[8] = XMFLOAT4(-1.0f, 0.0f, 0.0f, 0.0f);
 	mOffsets[9] = XMFLOAT4(+1.0f, 0.0f, 0.0f, 0.0f);
 
@@ -943,7 +982,7 @@ void SetSSAOOffsetVectors(void)
 
 	for (int i = 0; i < 14; i++)
 	{
-		// 0.25‚©‚ç1.0‚Ì”ÍˆÍ‚Éƒ‰ƒ“ƒ_ƒ€‚É‚·‚é
+		// 0.25ã‹ã‚‰1.0ã®ç¯„å›²ã«ãƒ©ãƒ³ãƒ€ãƒ ã«ã™ã‚‹
 		float s = 0.25f + (float)(rand() % 512) / 511 * 0.75f;
 		XMVECTOR v = s * XMVector4Normalize(XMLoadFloat4(&mOffsets[i]));
 		XMStoreFloat4(&mOffsets[i], v);

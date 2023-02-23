@@ -1,7 +1,7 @@
 //=============================================================================
 //
 // ÉÇÉfÉãÇÃèàóù [model.cpp]
-// Author : 
+// Author : ó—Å@ô°„∫
 //
 //=============================================================================
 #define _CRT_SECURE_NO_WARNINGS
@@ -133,12 +133,6 @@ void LoadModel( char *FileName, DX11_MODEL *Model )
 													NULL );
 		}
 	}
-
-	/*delete[] model.VertexArray;
-	delete[] model.IndexArray;
-	delete[] model.SubsetArray;*/
-
-
 }
 
 

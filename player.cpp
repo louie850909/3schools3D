@@ -17,6 +17,7 @@
 #include "enemy.h"
 #include "stage.h"
 #include "fade.h"
+#include "sound.h"
 
 //*****************************************************************************
 // マクロ定義
@@ -55,14 +56,8 @@ static float		roty = 0.0f;
 
 static LIGHT		g_Light;
 
-
-
-
-
 // プレイヤーの階層アニメーションデータ
-
-
-// プレイヤーの頭を左右に動かしているアニメデータ
+// プレイヤーの歩いているアニメデータ
 static INTERPOLATION_DATA move_lefthand_tbl[] = {	// pos, rot, scl, frame
 	{ XMFLOAT3(-5.0f, -5.3f, 9.6f), XMFLOAT3(-0.2f, -0.1f, 1.3f),      XMFLOAT3(1.0f, 1.0f, 1.0f), 30 },
 	{ XMFLOAT3(-5.0f, -5.3f, 9.6f), XMFLOAT3(-1.5f, -0.1f, 1.3f),      XMFLOAT3(1.0f, 1.0f, 1.0f), 30 },
@@ -81,8 +76,6 @@ static INTERPOLATION_DATA move_righthand_tbl[] = {	// pos, rot, scl, frame
 
 };
 
-
-// プレイヤーの歩いているアニメデータ
 static INTERPOLATION_DATA idle_lefthand_tbl[] = {	// pos, rot, scl, frame
 	{ XMFLOAT3(-5.0f, -5.3f, 9.6f), XMFLOAT3(-1.5f, -0.1f, 1.3f),      XMFLOAT3(1.0f, 1.0f, 1.0f), 30 },
 	//{ XMFLOAT3(0.0f, 10.0f, 0.0f), XMFLOAT3(0.0f, -XM_PI / 2, 0.0f), XMFLOAT3(1.0f, 1.0f, 1.0f), 240 },
@@ -117,8 +110,7 @@ static INTERPOLATION_DATA run_righthand_tbl[] = {	// pos, rot, scl, frame
 
 };
 
-
-
+static int g_counter = 0;
 
 
 
@@ -247,6 +239,7 @@ void UpdatePlayer(void)
 	// fps移動処理
 	if (GetKeyboardPress(DIK_A))
 	{
+		g_Player.state = MOVE;
 		g_Player.spd = VALUE_MOVE;
 		//g_Player.pos.x -= g_Player.spd;
 
@@ -256,6 +249,7 @@ void UpdatePlayer(void)
 
 	if (IsButtonTriggered(0, BUTTON_LEFT))
 	{
+		g_Player.state = MOVE;
 		g_Player.spd = VALUE_MOVE;
 		//g_Player.pos.x -= g_Player.spd;
 
@@ -265,6 +259,7 @@ void UpdatePlayer(void)
 	
 	if (GetKeyboardPress(DIK_D))
 	{
+		g_Player.state = MOVE;
 		g_Player.spd = VALUE_MOVE;
 		//g_Player.pos.x += g_Player.spd;
 		
@@ -274,6 +269,7 @@ void UpdatePlayer(void)
 
 	if (IsButtonTriggered(0, BUTTON_RIGHT))
 	{
+		g_Player.state = MOVE;
 		g_Player.spd = VALUE_MOVE;
 		//g_Player.pos.x += g_Player.spd;
 
@@ -311,6 +307,7 @@ void UpdatePlayer(void)
 	
 	if (GetKeyboardPress(DIK_S))
 	{
+		g_Player.state = MOVE;
 		g_Player.spd = VALUE_MOVE;
 		//g_Player.pos.z -= g_Player.spd;
 
@@ -320,11 +317,20 @@ void UpdatePlayer(void)
 
 	if (IsButtonTriggered(0, BUTTON_DOWN))
 	{
+		g_Player.state = MOVE;
 		g_Player.spd = VALUE_MOVE;
 		//g_Player.pos.z -= g_Player.spd;
 
 		g_Player.pos.x -= sinf(g_Player.rot.y) * g_Player.spd;
 		g_Player.pos.z -= cosf(g_Player.rot.y) * g_Player.spd;
+	}
+
+	if (g_Player.state == MOVE) g_counter++;
+
+	if (g_counter >= 25)
+	{
+		g_counter = 0;
+		PlaySound(SOUND_LABEL_SE_walk);
 	}
 
 #ifdef _DEBUG
@@ -434,50 +440,6 @@ void UpdatePlayer(void)
 		g_Player.pos.z = -2500.0f;
 	}
 
-	//// ポイントライトのテスト
-	//{
-	//	LIGHT *light = GetLightData(1);
-	//	XMFLOAT3 pos = g_Player.pos;
-	//	pos.y += 20.0f;
-
-	//	light->Position = pos;
-	//	light->Diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	//	light->Ambient = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	//	light->Type = LIGHT_TYPE_POINT;
-	//	light->Enable = TRUE;
-	//	SetLightData(1, light);
-	//}
-
-
-
-	//////////////////////////////////////////////////////////////////////
-	// 姿勢制御
-	//////////////////////////////////////////////////////////////////////
-
-//	XMVECTOR vx, nvx, up;
-//	XMVECTOR quat;
-//	float len, angle;
-//
-//
-//	g_Player.UpVector = Normal;
-//	up = { 0.0f, 1.0f, 0.0f, 0.0f };
-//	vx = XMVector3Cross(up, XMLoadFloat3(&g_Player.UpVector));
-//
-//	nvx = XMVector3Length(vx);
-//	XMStoreFloat(&len, nvx);
-//	nvx = XMVector3Normalize(vx);
-//	//nvx = vx / len;
-//	angle = asinf(len);
-//
-//	//quat = XMQuaternionIdentity();
-//
-////	quat = XMQuaternionRotationAxis(nvx, angle);
-//	quat = XMQuaternionRotationNormal(nvx, angle);
-//
-//
-//	quat = XMQuaternionSlerp(XMLoadFloat4(&g_Player.Quaternion), quat, 0.05f);
-//	XMStoreFloat4(&g_Player.Quaternion, quat);
-
 	// エネミーとの当たり判定
 	ENEMY* enemy = GetEnemy();
 	XMFLOAT3 hitPos = { 0.0f, 0.0f, 0.0f };
@@ -494,6 +456,7 @@ void UpdatePlayer(void)
 	// デバッグ表示
 	PrintDebugProc("Player X:%f Y:%f Z:%f N:%f\n", g_Player.pos.x, g_Player.pos.y, g_Player.pos.z, Normal.y);
 	PrintDebugProc("Hitpoint X:%f Y:%f Z:%f\n", HitPosition.x, HitPosition.y, HitPosition.z);
+	PrintDebugProc("g_counter = %d\n", g_counter);
 #endif
 
 }
@@ -535,9 +498,6 @@ void DrawPlayer(void)
 
 	// 縁取りの設定
 	SetFuchi(false);
-
-	// モデル描画
-	//DrawModel(&g_Player.model);
 
 
 

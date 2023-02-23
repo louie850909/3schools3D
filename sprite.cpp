@@ -1,7 +1,7 @@
 //=============================================================================
 //
 // スプライト処理 [sprite.cpp]
-// Author : GP11B132 99 外岡高明
+// Author : 林　劭羲
 //
 //=============================================================================
 #include "main.h"
@@ -59,25 +59,6 @@ void SetSprite(ID3D11Buffer *buf, float X, float Y, float Width, float Height, f
 	vertex[3].Position = XMFLOAT3(X + hw, Y + hh, 0.0f);
 	vertex[3].Diffuse  = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	vertex[3].TexCoord = XMFLOAT2(U + UW, V + VH);
-
-	// 左上を原点として設定するプログラム
-	//vertex[0].Position = XMFLOAT3(X, Y, 0.0f);
-	//vertex[0].Diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	//vertex[0].TexCoord = D3DXVECTOR2(U, V);
-
-	//vertex[1].Position = XMFLOAT3(X + Width, Y, 0.0f);
-	//vertex[1].Diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	//vertex[1].TexCoord = D3DXVECTOR2(U + UW, V);
-
-	//vertex[2].Position = XMFLOAT3(X, Y + Height, 0.0f);
-	//vertex[2].Diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	//vertex[2].TexCoord = D3DXVECTOR2(U, V + VH);
-
-	//vertex[3].Position = XMFLOAT3(X + Width, Y + Height, 0.0f);
-	//vertex[3].Diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	//vertex[3].TexCoord = D3DXVECTOR2(U + UW, V + VH);
-
-
 
 	GetDeviceContext()->Unmap(buf, 0);
 
