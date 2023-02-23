@@ -54,10 +54,13 @@ static ID3D11PixelShader* g_PixelShaderInstViewPosMap = NULL;
 static ID3D11Buffer* g_VertexBuffer = NULL;
 
 static ID3D11Buffer* g_SSAOConstantBuffer = NULL;
+static ID3D11Buffer* g_SSAOOffsetBuffer = NULL;
 
 static SSAO_CONSTANT_BUFFER g_SSAOConstant;
+static SSAO_OFFSET_VECTORS g_SSAOOffset;
 
 void SetSSAOConstant(void);
+void SetSSAOOffsetVectors(void);
 static XMMATRIX InverseTranspose(CXMMATRIX M);
 
 HRESULT InitSSAO()
@@ -407,7 +410,14 @@ HRESULT InitSSAO()
 	GetDeviceContext()->VSSetConstantBuffers(11, 1, &g_SSAOConstantBuffer);
 	GetDeviceContext()->PSSetConstantBuffers(11, 1, &g_SSAOConstantBuffer);
 
+	hBufferDesc.ByteWidth = sizeof(SSAO_OFFSET_VECTORS);
+
+	GetDevice()->CreateBuffer(&hBufferDesc, NULL, &g_SSAOOffsetBuffer);
+	GetDeviceContext()->VSSetConstantBuffers(12, 1, &g_SSAOOffsetBuffer);
+	GetDeviceContext()->PSSetConstantBuffers(12, 1, &g_SSAOOffsetBuffer);
+
 	SetSSAOConstant();
+	SetSSAOOffsetVectors();
 	
 	return S_OK;
 }
@@ -884,19 +894,29 @@ ID3D11InputLayout* GetSSAOInputLayout(int pass)
 
 void SetSSAOConstant(void)
 {
-	XMMATRIX Tex(
+	XMMATRIX Tex = XMMATRIX(
 		0.5f, 0.0f, 0.0f, 0.0f,
 		0.0f, -0.5f, 0.0f, 0.0f,
 		0.0f, 0.0f, 1.0f, 0.0f,
 		0.5f, 0.5f, 0.0f, 1.0f);
 
 	g_SSAOConstant.ViewToTex = XMMatrixTranspose(Tex);
+
+	g_SSAOConstant.OcclusionFadeEnd = OCC_FADE_END;
+	g_SSAOConstant.OcclusionFadeStart = OCC_FADE_START;
+	g_SSAOConstant.OcclusionRadius = OCC_RADIUS;
+	g_SSAOConstant.SurfaceEpsilon = SURFACE_EPSILON;
 	
 	g_SSAOConstant.FrustumCorners[0] = XMFLOAT4(-SCREEN_WIDTH / 2, -SCREEN_HEIGHT / 2, VIEW_FAR_Z, 0.0f);
 	g_SSAOConstant.FrustumCorners[1] = XMFLOAT4(-SCREEN_WIDTH / 2, +SCREEN_HEIGHT / 2, VIEW_FAR_Z, 0.0f);
 	g_SSAOConstant.FrustumCorners[2] = XMFLOAT4(+SCREEN_WIDTH / 2, +SCREEN_HEIGHT / 2, VIEW_FAR_Z, 0.0f);
 	g_SSAOConstant.FrustumCorners[3] = XMFLOAT4(+SCREEN_WIDTH / 2, -SCREEN_HEIGHT / 2, VIEW_FAR_Z, 0.0f);
 
+	GetDeviceContext()->UpdateSubresource(g_SSAOConstantBuffer, 0, NULL, &g_SSAOConstant, 0, 0);
+}
+
+void SetSSAOOffsetVectors(void)
+{
 	XMFLOAT4 mOffsets[14];
 	// 8 —§•û‘Ì‚Ì’¸“_
 	mOffsets[0] = XMFLOAT4(+1.0f, +1.0f, +1.0f, 0.0f);
@@ -920,18 +940,18 @@ void SetSSAOConstant(void)
 
 	mOffsets[12] = XMFLOAT4(0.0f, 0.0f, -1.0f, 0.0f);
 	mOffsets[13] = XMFLOAT4(0.0f, 0.0f, +1.0f, 0.0f);
-	
+
 	for (int i = 0; i < 14; i++)
 	{
 		// 0.25‚©‚ç1.0‚Ì”ÍˆÍ‚Éƒ‰ƒ“ƒ_ƒ€‚É‚·‚é
 		float s = 0.25f + (float)(rand() % 512) / 511 * 0.75f;
 		XMVECTOR v = s * XMVector4Normalize(XMLoadFloat4(&mOffsets[i]));
 		XMStoreFloat4(&mOffsets[i], v);
-		
-		g_SSAOConstant.OffsetVectors[i] = mOffsets[i];
+
+		g_SSAOOffset.OffsetVectors[i] = mOffsets[i];
 	}
 
-	GetDeviceContext()->UpdateSubresource(g_SSAOConstantBuffer, 0, NULL, &g_SSAOConstant, 0, 0);
+	GetDeviceContext()->UpdateSubresource(g_SSAOOffsetBuffer, 0, NULL, &g_SSAOOffset, 0, 0);
 }
 
 static XMMATRIX InverseTranspose(CXMMATRIX M)

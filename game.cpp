@@ -51,6 +51,7 @@ void CheckHit(void);
 static int	g_ViewPortType_Game = TYPE_FULL_SCREEN;
 
 static bool	g_bPause = true;	// ポーズON/OFF
+static bool g_bDebug = false;	// デバッグON/OFF
 
 
 //=============================================================================
@@ -226,6 +227,13 @@ void UpdateGame(void)
 
 	// スコアの更新処理
 	UpdateScore();
+
+#ifdef _DEBUG
+	if (GetKeyboardTrigger(DIK_F1))
+	{
+		g_bDebug = g_bDebug ? false : true;
+	}
+#endif
 }
 
 //=============================================================================
@@ -244,8 +252,15 @@ void DrawGame0(void)
 	// 3Dの物を描画する処理
 	// 地面の描画処理
 	//DrawMeshField();
-
-	SetSSAO(true);
+	if (g_bDebug == true)
+	{
+		SetSSAO(true);
+	}
+	else
+	{
+		SetSSAO(false);
+	}
+	
 	DrawStage();
 	SetSSAO(false);
 
@@ -264,7 +279,14 @@ void DrawGame0(void)
 	// 壁の描画処理
 	//DrawMeshWall();
 
-	SetSSAO(true);
+	if (g_bDebug == true)
+	{
+		SetSSAO(true);
+	}
+	else
+	{
+		SetSSAO(false);
+	}
 	// 木の描画処理
 	DrawTree();
 	// 空の描画処理

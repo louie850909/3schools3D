@@ -99,7 +99,6 @@ cbuffer TimeBuffer : register(b9)
 struct SSAOCB
 {
     matrix ViewToTex;
-    float4 OffsetVectors[14];
     float4 FrustumCorners[4];
 	
     float OcclusionRadius;
@@ -111,6 +110,16 @@ struct SSAOCB
 cbuffer SSAOBuffer : register(b11)
 {
     SSAOCB SSAO;
+}
+
+struct SSAOOV
+{
+    float4 OffsetVectors[14];
+};
+
+cbuffer SSAOOffsetBuffer : register(b12)
+{
+    SSAOOV OffsetVectors;
 }
 
 struct VSINPUT
@@ -194,23 +203,17 @@ float OcculusionFunction(float distZ)
     return occ;
 }
 
-float4 getViewPos(float2 texCoord, float z)
+float doAmbientOcclusion(in float2 tcoord, in float2 uv, in float3 p, in float3 cnorm)
 {
-    float4 worldPos;
+    float g_scale, g_bias, g_intensity;
+    g_scale = 1.0f;
+    g_bias = 0.05f;
+    g_intensity = 0.4f;
     
-    // まず正規化スクリーン座標系での座標を計算する。
-    // z座標は深度テクスチャから引っ張ってくる。
-    worldPos.z = z;
-    // xy座標はUV座標から計算する。
-    worldPos.xy = texCoord * float2(2.0f, -2.0f) - 1.0f;
-    worldPos.w = 1.0f;
-    // ビュープロジェクション行列の逆行列を乗算して、ワールド座標に戻す。
-    worldPos = mul(inverse(Projection), worldPos);
-    worldPos.xyz /= worldPos.w;
-    
-    float4 ViewPos;
-    ViewPos = mul(worldPos, View);
-    return ViewPos;
+    float3 diff = g_TexSSAOViewPos.Sample(g_SamplerState, tcoord + uv).xyz - p;
+    const float3 v = normalize(diff);
+    const float d = length(diff) * g_scale;
+    return max(0.0, dot(cnorm, v) - g_bias) * (1.0 / (1.0 + d)) * g_intensity;
 }
 
 Texture2D g_Texture : register(t0);
@@ -221,35 +224,20 @@ PSINPUT NormalZMapVS(VSINPUT input)
     wvp = mul(World, View);
     wvp = mul(wvp, Projection);
     
-    matrix invTrnWorld = transpose(inverse(World));
-    invTrnWorld[3][0] = 0.0f;
-    invTrnWorld[3][1] = 0.0f;
-    invTrnWorld[3][2] = 0.0f;
-    invTrnWorld[0][3] = 0.0f;
-    invTrnWorld[1][3] = 0.0f;
-    invTrnWorld[2][3] = 0.0f;
-    invTrnWorld[3][3] = 1.0f;
+    matrix nWorld = World;
+    nWorld[3][0] = 0.0f;
+    nWorld[3][1] = 0.0f;
+    nWorld[3][2] = 0.0f;
+    nWorld[0][3] = 0.0f;
+    nWorld[1][3] = 0.0f;
+    nWorld[2][3] = 0.0f;
+    nWorld[3][3] = 1.0f;
+    matrix invTrnWorld = transpose(inverse(nWorld));
     
-    matrix invTrnView = transpose(inverse(View));
-    invTrnView[3][0] = 0.0f;
-    invTrnView[3][1] = 0.0f;
-    invTrnView[3][2] = 0.0f;
-    invTrnView[0][3] = 0.0f;
-    invTrnView[1][3] = 0.0f;
-    invTrnView[2][3] = 0.0f;
-    invTrnView[3][3] = 1.0f;
-    
-    float3x3 wv = mul((float3x3)World, (float3x3)View);
-    float4x4 wv4 = float4x4(
-        float4(wv[0],   0),
-        float4(wv[1],   0),
-        float4(wv[2],   0),
-        float4(0, 0, 0, 1)
-    );
+    matrix wInvTV = mul(invTrnWorld, View);
     
     output.Position = mul(input.Position, wvp);
-    output.Normal = mul(input.Normal, invTrnWorld);
-    output.Normal = normalize(mul(output.Normal, invTrnView));
+    output.Normal.xyz = normalize(mul(input.Normal.xyz, (float3x3) wInvTV));
     output.TexCoord = input.TexCoord;
     output.ViewPos = mul(input.Position, World);
     output.ViewPos = mul(output.ViewPos, View);
@@ -269,8 +257,7 @@ PSOUTPUT NormalZMapPS(PSINPUT input)
     float4x4 Wxv = mul(World, View);
     
     float4 Out;
-    //Out.xyz = input.Normal.xyz;
-    Out.xyz = (input.Normal.xyz / 2.0f) + 0.5f;
+    Out.xyz = input.Normal / 2.0f + 0.5f;
     Out.w = input.ViewPos.z;
     
     output.Diffuse = Out;
@@ -294,54 +281,83 @@ PSOUTPUT SSAOPS(PSINPUT input)
 {
     PSOUTPUT output;
     
-    float3 normal = g_TexSSAONormalZMap.Sample(g_SamplerState, input.TexCoord).xyz;
-    float pz = g_TexSSAOViewPos.Sample(g_SamplerState, input.TexCoord).a;
+    float g_sample_rad = 0.3f;
     
-    float3 p = getViewPos(input.TexCoord, pz);
+    const float2 vec[4] = { float2(1, 0), float2(-1, 0), float2(0, 1), float2(0, -1) };
+    float3 p = g_TexSSAOViewPos.Sample(g_SamplerState, input.TexCoord).xyz;
+    float3 n = g_TexSSAONormalZMap.Sample(g_SamplerState, input.TexCoord).xyz;
+    float2 rand = g_TexSSAORandomMap.Sample(g_SamplerState, input.TexCoord).xy;
+    rand = rand * 2.0f - 1.0f;
     
-    float3 randVec = 2.0f * g_TexSSAORandomMap.Sample(g_SamplerState, input.TexCoord).rgb - 1.0f;
+    float ao = 0.0f;
+    float rad = g_sample_rad / p.z;
     
-    float occSum = 0.0f;
-    
-    for (int i = 0; i < SPHERE_COUNT;i++)
+    int iterations = 4;
+    for (int j = 0; j < iterations; ++j)
     {
-        float3 offset = reflect(SSAO.OffsetVectors[i].xyz, randVec);
+        float2 coord1 = reflect(vec[j], rand) * rad;
+        float2 coord2 = float2(coord1.x * 0.707 - coord1.y * 0.707, coord1.x * 0.707 + coord1.y * 0.707);
         
-        float flip = sign(dot(offset, normal));
-        
-        float3 q = p + flip * SSAO.OcclusionRadius * offset;
-        
-        float4 projQ = mul(float4(q, 1.0f), SSAO.ViewToTex);
-        projQ /= projQ.w;
-        projQ.x = projQ.x / 2.0f + 0.5f;
-        projQ.y = projQ.y / (-2.0f) + 0.5f;
-        
-        float rz = g_TexSSAOViewPos.Sample(g_SamplerState, projQ.xy).w;
-        
-        float3 r = getViewPos(projQ.xy, rz);
-        
-        float distZ = p.z - r.z;
-        float dp = max(dot(normalize(normal), normalize(r - p)), 0);
-        float occ = dp * OcculusionFunction(distZ);
-        
-        occSum += occ;
+        ao += doAmbientOcclusion(input.TexCoord, coord1 * 0.25, p, n);
+        ao += doAmbientOcclusion(input.TexCoord, coord2 * 0.5, p, n);
+        ao += doAmbientOcclusion(input.TexCoord, coord1 * 0.75, p, n);
+        ao += doAmbientOcclusion(input.TexCoord, coord2, p, n);
     }
     
-    occSum /= (float)SPHERE_COUNT;
+    ao /= (float) iterations * 4.0;
     
-    float access = 1.0f - occSum;
+    float access = 1.0f - ao;
+    output.Diffuse.xyz = saturate(pow(access, 4.0f));
+    output.Diffuse.w = 1.0f;
+    //matrix ViewToTex = mul(Projection, SSAO.ViewToTex);
     
-    output.Diffuse = saturate(pow(access, 4.0f));
+    //float4 normalDepth = g_TexSSAONormalZMap.Sample(g_SamplerState, input.TexCoord);
+    
+    //float3 n = normalDepth.xyz;
+    ////float pz = g_TexSSAOViewPos.Sample(g_SamplerState, input.TexCoord).z;
+    
+    //float3 p = g_TexSSAOViewPos.Sample(g_SamplerState, input.TexCoord).xyz;
+    
+    //float3 randVec = g_TexSSAORandomMap.Sample(g_SamplerState, input.TexCoord).xyz;
+    //randVec = 2.0f * randVec - 1.0f;
+    
+    //float occSum;
+    
+    //for (int i = 0; i < SPHERE_COUNT;i++)
+    //{
+    //    float3 offset = reflect(OffsetVectors.OffsetVectors[i].xyz, randVec);
+        
+    //    float flip = sign(dot(offset, n));
+        
+    //    float3 q = p + flip * SSAO.OcclusionRadius * offset;
+        
+    //    float4 projQ = mul(float4(q, 1.0f), ViewToTex);
+    //    projQ /= projQ.w;
+        
+    //    //float rz = g_TexSSAOViewPos.Sample(g_SamplerState, projQ.xy).z;
+    //    float3 r = g_TexSSAOViewPos.Sample(g_SamplerState, projQ.xy).xyz;
+        
+    //    float distZ = p.z - r.z;
+    //    float dp = max(dot(n, normalize(r - p)), 0.0f);
+    //    float occ = dp * OcculusionFunction(distZ);
+        
+    //    occSum += occ;
+    //}
+    
+    //occSum /= SPHERE_COUNT;
+    //float access = 1.0f - occSum;
+    
+    //output.Diffuse = saturate(pow(access, 4.0f));
     
     return output;
 }
 
 // サンプリング数
-#define BLUROFFSET_COUNT 16
+#define BLUROFFSET_COUNT 24
 PSOUTPUT SSAOBlurPS(PSINPUT input)
 {
     // ブラーフィルター時のテクセルのオフセット配列
-    static float2 BlurOffset16[BLUROFFSET_COUNT] =
+    static float2 BlurOffset24[BLUROFFSET_COUNT] =
     {
         float2(1, 1)
       , float2(-1, 1)
@@ -359,6 +375,14 @@ PSOUTPUT SSAOBlurPS(PSINPUT input)
       , float2(1, -3)
       , float2(3, -3)
       , float2(3, -1)
+        , float2(2, 1)
+        , float2(1, 2)
+        , float2(2, -1)
+        , float2(1,-2)
+        , float2(-2, 1)
+        , float2(-1,2)
+        , float2(-2,-1)
+        , float2(-1,-2)
     };
     
     float ScreenWidth = 960.0f;
@@ -368,7 +392,7 @@ PSOUTPUT SSAOBlurPS(PSINPUT input)
     
     for (int i = 0; i < BLUROFFSET_COUNT; i++)
     {
-        float2 offset = BlurOffset16[i] / float2(ScreenWidth, ScreenHeight);
+        float2 offset = BlurOffset24[i] / float2(ScreenWidth, ScreenHeight);
         Out += g_TexSSAOTexMap.Sample(g_SamplerState, input.TexCoord + offset).r;
     }
     
@@ -456,35 +480,20 @@ SSAOPSINSTIN SSAO_INSTVS(SSAOVSINSTIN input)
     wvp = mul(world, View);
     wvp = mul(wvp, Projection);
     
-    matrix invTrnWorld = transpose(inverse(world));
-    invTrnWorld[3][0] = 0.0f;
-    invTrnWorld[3][1] = 0.0f;
-    invTrnWorld[3][2] = 0.0f;
-    invTrnWorld[0][3] = 0.0f;
-    invTrnWorld[1][3] = 0.0f;
-    invTrnWorld[2][3] = 0.0f;
-    invTrnWorld[3][3] = 1.0f;
+    matrix nWorld = world;
+    nWorld[3][0] = 0.0f;
+    nWorld[3][1] = 0.0f;
+    nWorld[3][2] = 0.0f;
+    nWorld[0][3] = 0.0f;
+    nWorld[1][3] = 0.0f;
+    nWorld[2][3] = 0.0f;
+    nWorld[3][3] = 1.0f;
+    matrix invTrnWorld = transpose(inverse(nWorld));
     
-    matrix invTrnView = transpose(inverse(View));
-    invTrnView[3][0] = 0.0f;
-    invTrnView[3][1] = 0.0f;
-    invTrnView[3][2] = 0.0f;
-    invTrnView[0][3] = 0.0f;
-    invTrnView[1][3] = 0.0f;
-    invTrnView[2][3] = 0.0f;
-    invTrnView[3][3] = 1.0f;
-    
-    float3x3 wv = mul((float3x3) world, (float3x3) View);
-    float4x4 wv4 = float4x4(
-        float4(wv[0], 0),
-        float4(wv[1], 0),
-        float4(wv[2], 0),
-        float4(0, 0, 0, 1)
-    );
+    matrix wInvTV = mul(invTrnWorld, View);
     
     output.Position = mul(input.Position, wvp);
-    output.Normal = mul(input.Normal, invTrnWorld);
-    output.Normal = normalize(mul(output.Normal, invTrnView));
+    output.Normal.xyz = normalize(mul(input.Normal.xyz, (float3x3)wInvTV));
 
     output.TexCoord = input.TexCoord;
 
@@ -511,8 +520,8 @@ SSAOPSINSTOUT SSAO_INSTPS(SSAOPSINSTIN input)
     }
     
     float4 Out;
-    Out.rgb = (input.Normal.xyz / 2.0f) + 0.5f;
-    Out.a = input.ViewPos.z;
+    Out.xyz = input.Normal / 2.0f + 0.5f;
+    Out.w = input.ViewPos.z;
     
     SSAOPSINSTOUT output;
     output.Diffuse = Out;
@@ -546,7 +555,7 @@ PSOUTPUT ViewPosMapPS(PSINPUT input)
     }
     
     float4 Out;
-    Out = input.Position.z;
+    Out = input.ViewPos;
     
     output.Diffuse = Out;
     return output;
@@ -630,7 +639,7 @@ SSAOPSINSTOUT InstViewPosMapPS(SSAOPSINSTIN input)
     }
     
     float4 Out;
-    Out = input.Position.z;
+    Out = input.ViewPos;
     
     SSAOPSINSTOUT output;
     output.Diffuse = Out;
