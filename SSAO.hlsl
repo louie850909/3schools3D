@@ -126,7 +126,9 @@ struct PSINPUT
     float4 Position : SV_POSITION;
     float4 Normal : NORMAL0;
     float2 TexCoord : TEXCOORD0;
+    float4 Diffuse : COLOR0;
     float4 ViewPos : POSITION0;
+    float4 LightPos : POSITION1;
 };
 
 struct PSOUTPUT
@@ -230,7 +232,7 @@ PSOUTPUT NormalZMapPS(PSINPUT input)
     float4x4 Wxv = mul(World, View);
     
     float4 Out;
-    Out.xyz = input.Normal.xyz;
+    Out.xyz = (input.Normal.xyz / 2.0f) + 0.5f;
     Out.w = input.ViewPos.z;
     
     output.Diffuse = Out;
@@ -455,8 +457,7 @@ SSAOPSINSTIN SSAO_INSTVS(SSAOVSINSTIN input)
     );
     
     output.Position = mul(input.Position, wvp);
-    output.Normal = input.Normal;
-    //output.Normal = normalize(mul(input.Normal, transpose(inverse(wv4))));
+    output.Normal = normalize(mul(input.Normal, transpose(inverse(wv4))));
 
     output.TexCoord = input.TexCoord;
 
@@ -526,10 +527,8 @@ SSAOPSINSTOUT SSAO_INSTPS(SSAOPSINSTIN input)
         discard;
     }
     
-    float4x4 Wxv = mul(world, View);
-    
     float4 Out;
-    Out.rgb = (input.Normal.xyz);
+    Out.rgb = (input.Normal.xyz / 2.0f) + 0.5f;
     Out.a = input.ViewPos.z;
     
     SSAOPSINSTOUT output;

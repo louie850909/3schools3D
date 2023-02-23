@@ -11,6 +11,12 @@ static ID3D11RenderTargetView* g_NormalZMapRTV = NULL;
 static ID3D11DepthStencilView* g_NormalZMapDSV = NULL;
 static ID3D11ShaderResourceView* g_NormalZMapSRV = NULL;
 
+static ID3D11Texture2D* g_ViewPosMap = NULL;
+static ID3D11Texture2D* g_ViewPosMapDS = NULL;
+static ID3D11RenderTargetView* g_ViewPosMapRTV = NULL;
+static ID3D11DepthStencilView* g_ViewPosMapDSV = NULL;
+static ID3D11ShaderResourceView* g_ViewPosMapSRV = NULL;
+
 static ID3D11Texture2D* g_SSAORandomTex = NULL;
 static ID3D11ShaderResourceView* g_SSAORandomTexSRV = NULL;
 
@@ -26,10 +32,6 @@ static ID3D11VertexShader*	g_SSAOInstVS = NULL;
 static ID3D11InputLayout*	g_SSAOInstLayout = NULL;
 static ID3D11PixelShader*	g_SSAOInstPS = NULL;
 
-static ID3D11VertexShader*	g_SSAOGrassVS = NULL;
-static ID3D11InputLayout*	g_SSAOGrassLayout = NULL;
-static ID3D11PixelShader*	g_SSAOGrassPS = NULL;
-
 static ID3D11VertexShader* g_VertexShaderSSAONormalZMap = NULL;
 static ID3D11InputLayout* g_InputLayoutSSAONormalZMap = NULL;
 static ID3D11PixelShader* g_PixelShaderSSAONormalZMap = NULL;
@@ -39,6 +41,14 @@ static ID3D11InputLayout* g_InputLayoutSSAO = NULL;
 static ID3D11PixelShader* g_PixelShaderSSAO = NULL;
 
 static ID3D11PixelShader* g_PixelShaderSSAOBlur = NULL;
+
+static ID3D11VertexShader* g_VertexShaderViewPosMap = NULL;
+static ID3D11InputLayout* g_InputLayoutViewPosMap = NULL;
+static ID3D11PixelShader* g_PixelShaderViewPosMap = NULL;
+
+static ID3D11VertexShader* g_VertexShaderInstViewPosMap = NULL;
+static ID3D11InputLayout* g_InputLayoutInstViewPosMap = NULL;
+static ID3D11PixelShader* g_PixelShaderInstViewPosMap = NULL;
 
 static ID3D11Buffer* g_VertexBuffer = NULL;
 
@@ -99,7 +109,7 @@ HRESULT InitSSAO()
 	{
 		texDesc.Width = SCREEN_WIDTH;
 		texDesc.Height = SCREEN_HEIGHT;
-		texDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+		texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 		texDesc.Usage = D3D11_USAGE_DEFAULT;
 		texDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
 		texDesc.CPUAccessFlags = 0;
@@ -113,6 +123,26 @@ HRESULT InitSSAO()
 		texDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 		GetDevice()->CreateTexture2D(&texDesc, NULL, &g_NormalZMapDS);
 		GetDevice()->CreateDepthStencilView(g_NormalZMapDS, NULL, &g_NormalZMapDSV);
+	}
+
+	// View空間座標マップの作成
+	{
+		texDesc.Width = SCREEN_WIDTH;
+		texDesc.Height = SCREEN_HEIGHT;
+		texDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+		texDesc.Usage = D3D11_USAGE_DEFAULT;
+		texDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+		texDesc.CPUAccessFlags = 0;
+		texDesc.MiscFlags = 0;
+
+		GetDevice()->CreateTexture2D(&texDesc, NULL, &g_ViewPosMap);
+		GetDevice()->CreateRenderTargetView(g_ViewPosMap, NULL, &g_ViewPosMapRTV);
+		GetDevice()->CreateShaderResourceView(g_ViewPosMap, NULL, &g_ViewPosMapSRV);
+
+		texDesc.Format = DXGI_FORMAT_UNKNOWN;
+		texDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+		GetDevice()->CreateTexture2D(&texDesc, NULL, &g_ViewPosMapDS);
+		GetDevice()->CreateDepthStencilView(g_ViewPosMapDS, NULL, &g_ViewPosMapDSV);
 	}
 
 	// SSAOマップの作成
@@ -194,16 +224,51 @@ HRESULT InitSSAO()
 	pPSBlob->Release();
 	pPSBlob = NULL;
 
-	// 草の頂点シェーダー
-	hr = D3DX11CompileFromFile("SSAO.hlsl", NULL, NULL, "SSAO_GRASSVS", "vs_4_0", shFlag, 0, NULL, &pVSBlob, &pErrorBlob, NULL);
+	// View空間座標頂点シェーダー
+	hr = D3DX11CompileFromFile("SSAO.hlsl", NULL, NULL, "ViewPosMapVS", "vs_4_0", shFlag, 0, NULL, &pVSBlob, &pErrorBlob, NULL);
 	if (FAILED(hr))
 	{
 		MessageBox(NULL, (char*)pErrorBlob->GetBufferPointer(), "VS", MB_OK | MB_ICONERROR);
 	}
-	GetDevice()->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, &g_SSAOGrassVS);
+	GetDevice()->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, &g_VertexShaderViewPosMap);
+
+	// View空間座標の入力レイアウト生成
+	D3D11_INPUT_ELEMENT_DESC ViewPosMapLayout[] =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,		0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT,		0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT,	0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,			0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	};
+	GetDevice()->CreateInputLayout(ViewPosMapLayout,
+				ARRAYSIZE(ViewPosMapLayout),
+				pVSBlob->GetBufferPointer(),
+				pVSBlob->GetBufferSize(),
+				&g_InputLayoutViewPosMap);
+
+	pVSBlob->Release();
+	pVSBlob = NULL;
+
+	// View空間座標ピクセルシェーダ
+	hr = D3DX11CompileFromFile("SSAO.hlsl", NULL, NULL, "ViewPosMapPS", "ps_4_0", shFlag, 0, NULL, &pPSBlob, &pErrorBlob, NULL);
+	if (FAILED(hr))
+	{
+		MessageBox(NULL, (char*)pErrorBlob->GetBufferPointer(), "PS", MB_OK | MB_ICONERROR);
+	}
+	GetDevice()->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), NULL, &g_PixelShaderViewPosMap);
+	pPSBlob->Release();
+	pPSBlob = NULL;
+
+	// View空間インスタンシング座標頂点シェーダー
+	hr = D3DX11CompileFromFile("SSAO.hlsl", NULL, NULL, "InstViewPosMapVS", "vs_4_0", shFlag, 0, NULL, &pVSBlob, &pErrorBlob, NULL);
+	if (FAILED(hr))
+	{
+		MessageBox(NULL, (char*)pErrorBlob->GetBufferPointer(), "VS", MB_OK | MB_ICONERROR);
+	}
+	GetDevice()->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), NULL, &g_VertexShaderInstViewPosMap);
 	
-	// 草の入力レイアウト生成
-	D3D11_INPUT_ELEMENT_DESC grassLayout[] =
+	// View空間インスタンシング座標の入力レイアウト生成
+	D3D11_INPUT_ELEMENT_DESC InstViewPosMapLayout[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,       0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT,       0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -213,24 +278,24 @@ HRESULT InitSSAO()
 		{ "INSTSCL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT,    1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1},
 		{ "INSTROT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT,    1, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_INSTANCE_DATA, 1},
 	};
-	UINT grassNumElements = ARRAYSIZE(grassLayout);
+	UINT grassNumElements = ARRAYSIZE(InstViewPosMapLayout);
 	
-	GetDevice()->CreateInputLayout(grassLayout,
+	GetDevice()->CreateInputLayout(InstViewPosMapLayout,
 		grassNumElements,
 		pVSBlob->GetBufferPointer(),
 		pVSBlob->GetBufferSize(),
-		&g_SSAOGrassLayout);
+		&g_InputLayoutInstViewPosMap);
 
 	pVSBlob->Release();
 	pVSBlob = NULL;
 
-	// 草のピクセルシェーダー
-	hr = D3DX11CompileFromFile("SSAO.hlsl", NULL, NULL, "SSAO_GRASSPS", "ps_4_0", shFlag, 0, NULL, &pPSBlob, &pErrorBlob, NULL);
+	// View空間インスタンシング座標のピクセルシェーダー
+	hr = D3DX11CompileFromFile("SSAO.hlsl", NULL, NULL, "InstViewPosMapPS", "ps_4_0", shFlag, 0, NULL, &pPSBlob, &pErrorBlob, NULL);
 	if (FAILED(hr))
 	{
 		MessageBox(NULL, (char*)pErrorBlob->GetBufferPointer(), "PS", MB_OK | MB_ICONERROR);
 	}
-	GetDevice()->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), NULL, &g_SSAOGrassPS);
+	GetDevice()->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), NULL, &g_PixelShaderInstViewPosMap);
 	pPSBlob->Release();
 	pPSBlob = NULL;
 
@@ -435,6 +500,18 @@ void UninitSSAO()
 		g_SSAOBlurTexSRV = NULL;
 	}
 
+	if (g_VertexShaderSSAONormalZMap)
+	{
+		g_VertexShaderSSAONormalZMap->Release();
+		g_VertexShaderSSAONormalZMap = NULL;
+	}
+
+	if (g_InputLayoutSSAONormalZMap)
+	{
+		g_InputLayoutSSAONormalZMap->Release();
+		g_InputLayoutSSAONormalZMap = NULL;
+	}
+
 	if (g_PixelShaderSSAONormalZMap)
 	{
 		g_PixelShaderSSAONormalZMap->Release();
@@ -477,22 +554,46 @@ void UninitSSAO()
 		g_SSAOInstLayout = NULL;
 	}
 
-	if(g_SSAOGrassVS)
+	if (g_SSAOConstantBuffer)
 	{
-		g_SSAOGrassVS->Release();
-		g_SSAOGrassVS = NULL;
-	}
-	
-	if (g_SSAOGrassPS)
-	{
-		g_SSAOGrassPS->Release();
-		g_SSAOGrassPS = NULL;
+		g_SSAOConstantBuffer->Release();
+		g_SSAOConstantBuffer = NULL;
 	}
 
-	if (g_SSAOGrassLayout)
+	if (g_VertexShaderViewPosMap)
 	{
-		g_SSAOGrassLayout->Release();
-		g_SSAOGrassLayout = NULL;
+		g_VertexShaderViewPosMap->Release();
+		g_VertexShaderViewPosMap = NULL;
+	}
+
+	if (g_InputLayoutViewPosMap)
+	{
+		g_InputLayoutViewPosMap->Release();
+		g_InputLayoutViewPosMap = NULL;
+	}
+
+	if (g_PixelShaderViewPosMap)
+	{
+		g_PixelShaderViewPosMap->Release();
+		g_PixelShaderViewPosMap = NULL;
+	}
+
+	if (g_VertexShaderInstViewPosMap)
+	{
+		g_VertexShaderInstViewPosMap->Release();
+		g_VertexShaderInstViewPosMap = NULL;
+	}
+
+	if (g_InputLayoutInstViewPosMap)
+	{
+		g_InputLayoutInstViewPosMap->Release();
+		g_InputLayoutInstViewPosMap = NULL;
+	}
+
+	if (g_PixelShaderInstViewPosMap)
+	{
+		g_PixelShaderInstViewPosMap->Release();
+		g_PixelShaderInstViewPosMap = NULL;
 	}
 }
 
@@ -699,10 +800,6 @@ ID3D11PixelShader* GetSSAOPixelShader(int pass)
 	case INSTNormalZMap:
 		return g_SSAOInstPS;
 		break;
-
-	case GrassNormalZMap:
-		return g_SSAOGrassPS;
-		break;
 	}
 }
 
@@ -713,10 +810,6 @@ ID3D11VertexShader* GetSSAOVertexShader(int pass)
 	case INSTNormalZMap:
 		return g_SSAOInstVS;
 		break;
-
-	case GrassNormalZMap:
-		return g_SSAOGrassVS;
-		break;
 	}
 }
 
@@ -726,10 +819,6 @@ ID3D11InputLayout* GetSSAOInputLayout(int pass)
 	{
 	case INSTNormalZMap:
 		return g_SSAOInstLayout;
-		break;
-
-	case GrassNormalZMap:
-		return g_SSAOGrassLayout;
 		break;
 	}
 }
