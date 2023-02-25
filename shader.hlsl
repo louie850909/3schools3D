@@ -220,7 +220,7 @@ PSOUTPUT PixelShaderPolygon(PSINPUT input )
             if (SSAO.x == 1.0f)
             {
                 float2 SampleCoord = float2(input.Position.x / 960.0f, input.Position.y / 540.0f);
-                AO = g_TexSSAO.Sample(g_SamplerState, SampleCoord);
+                AO.xyz = g_TexSSAO.Sample(g_SamplerState, SampleCoord).xyz;
             }
 
 			if (Light.Flags[i].y == 1)

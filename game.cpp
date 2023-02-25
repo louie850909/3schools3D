@@ -204,6 +204,7 @@ void UpdateGame(void)
 	{
 		g_bDebug = g_bDebug ? false : true;
 	}
+	UpdateSSAO();
 #endif
 }
 

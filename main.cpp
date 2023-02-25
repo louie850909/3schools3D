@@ -315,6 +315,11 @@ void Uninit(void)
 //=============================================================================
 void Update(void)
 {
+	// imgui更新処理
+	ImGui_ImplDX11_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
+
 	// 入力の更新処理
 	UpdateInput();
 
@@ -350,11 +355,6 @@ void Update(void)
 
 	// フェード処理の更新
 	UpdateFade();
-
-	// imgui更新処理
-	ImGui_ImplDX11_NewFrame();
-	ImGui_ImplWin32_NewFrame();
-	ImGui::NewFrame();
 
 }
 
@@ -431,10 +431,6 @@ void Draw(void)
 		break;
 	}
 
-	// imgui描画
-	ImGui::Render();
-	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-
 
 	// フェード描画
 	DrawFade();
@@ -442,6 +438,9 @@ void Draw(void)
 #ifdef _DEBUG
 	// デバッグ表示
 	DrawDebugProc();
+	// imgui描画
+	ImGui::Render();
+	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 #endif
 
 	// バックバッファ、フロントバッファ入れ替え

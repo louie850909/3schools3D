@@ -101,10 +101,10 @@ struct SSAOCB
     matrix ViewToTex;
     float4 FrustumCorners[4];
 	
-    float OcclusionRadius;
-    float OcclusionFadeStart;
-    float OcclusionFadeEnd;
-    float SurfaceEpsilon;
+    float Scale;
+    float Bias;
+    float Intensity;
+    float Radius;
 };
 
 cbuffer SSAOBuffer : register(b11)
@@ -195,9 +195,9 @@ float4x4 inverse(float4x4 m)
 float doAmbientOcclusion(in float2 tcoord, in float2 uv, in float3 p, in float3 cnorm)
 {
     float g_scale, g_bias, g_intensity;
-    g_scale = 1.0f;
-    g_bias = 0.05f;
-    g_intensity = 0.35f;
+    g_scale = SSAO.Scale;
+    g_bias = SSAO.Bias;
+    g_intensity = SSAO.Intensity;
     
     float3 diff = g_TexSSAOViewPos.Sample(g_SamplerState, tcoord + uv).xyz - p;
     const float3 v = normalize(diff);
@@ -270,9 +270,10 @@ PSOUTPUT SSAOPS(PSINPUT input)
 {
     PSOUTPUT output;
     
-    float g_sample_rad = 0.3f;
+    float g_sample_rad = SSAO.Radius;
     
-    const float2 vec[4] = { float2(1, 0), float2(-1, 0), float2(0, 1), float2(0, -1) };
+    const float2 vec[8] = { float2(1, 0), float2(-1, 0), float2(0, 1), float2(0, -1), 
+                            float2(0.5, 0), float2(-0.5, 0), float2(0, 0.5), float2(0, -0.5)};
     float3 p = g_TexSSAOViewPos.Sample(g_SamplerState, input.TexCoord).xyz;
     float3 n = g_TexSSAONormalZMap.Sample(g_SamplerState, input.TexCoord).xyz;
     float2 rand = g_TexSSAORandomMap.Sample(g_SamplerState, input.TexCoord).xy;
@@ -281,19 +282,23 @@ PSOUTPUT SSAOPS(PSINPUT input)
     float ao = 0.0f;
     float rad = g_sample_rad / p.z;
     
-    int iterations = 4;
+    int iterations = 8;
     for (int j = 0; j < iterations; ++j)
     {
         float2 coord1 = reflect(vec[j], rand) * rad;
         float2 coord2 = float2(coord1.x * 0.707 - coord1.y * 0.707, coord1.x * 0.707 + coord1.y * 0.707);
         
-        ao += doAmbientOcclusion(input.TexCoord, coord1 * 0.25, p, n);
+        ao += doAmbientOcclusion(input.TexCoord, coord1 * 0.125, p, n);
+        ao += doAmbientOcclusion(input.TexCoord, coord2 * 0.25, p, n);
+        ao += doAmbientOcclusion(input.TexCoord, coord1 * 0.375, p, n);
         ao += doAmbientOcclusion(input.TexCoord, coord2 * 0.5, p, n);
-        ao += doAmbientOcclusion(input.TexCoord, coord1 * 0.75, p, n);
+        ao += doAmbientOcclusion(input.TexCoord, coord1 * 0.625, p, n);
+        ao += doAmbientOcclusion(input.TexCoord, coord2 * 0.75, p, n);
+        ao += doAmbientOcclusion(input.TexCoord, coord1 * 0.875, p, n);
         ao += doAmbientOcclusion(input.TexCoord, coord2, p, n);
     }
     
-    ao /= (float) iterations * 4.0;
+    ao /= (float) iterations * 8;
     
     float access = 1.0f - ao;
     output.Diffuse.xyz = saturate(pow(access, 4.0f));

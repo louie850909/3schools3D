@@ -10,6 +10,7 @@
 #include "grass.h"
 #include "camera.h"
 #include <time.h>
+#include "imgui.h"
 
 //*****************************************************************************
 // マクロ定義
@@ -79,7 +80,6 @@ static SSAO_OFFSET_VECTORS g_SSAOOffset;
 
 void SetSSAOConstant(void);
 void SetSSAOOffsetVectors(void);
-static XMMATRIX InverseTranspose(CXMMATRIX M);
 
 HRESULT InitSSAO()
 {
@@ -445,6 +445,20 @@ HRESULT InitSSAO()
 //=============================================================================
 void UpdateSSAO()
 {
+#ifdef _DEBUG
+	ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(300, 300), ImGuiCond_FirstUseEver);
+
+	ImGui::Begin("SSAO", nullptr, ImGuiWindowFlags_None);
+	ImGui::SliderFloat("Radius", &g_SSAOConstant.Radius, 0.0f, 1.0f);
+	ImGui::SliderFloat("Bias", &g_SSAOConstant.Bias, 0.0f, 1.0f);
+	ImGui::SliderFloat("Intensity", &g_SSAOConstant.Intensity, 0.0f, 1.0f);
+	ImGui::SliderFloat("Scale", &g_SSAOConstant.Scale, 0.0f, 1.0f);
+
+	ImGui::End();
+
+	GetDeviceContext()->UpdateSubresource(g_SSAOConstantBuffer, 0, NULL, &g_SSAOConstant, 0, 0);
+#endif // DEBUG
 }
 
 //=============================================================================
@@ -953,10 +967,10 @@ void SetSSAOConstant(void)
 
 	g_SSAOConstant.ViewToTex = XMMatrixTranspose(Tex);
 
-	g_SSAOConstant.OcclusionFadeEnd = OCC_FADE_END;
-	g_SSAOConstant.OcclusionFadeStart = OCC_FADE_START;
-	g_SSAOConstant.OcclusionRadius = OCC_RADIUS;
-	g_SSAOConstant.SurfaceEpsilon = SURFACE_EPSILON;
+	g_SSAOConstant.Bias = OCC_BIAS;
+	g_SSAOConstant.Intensity = OCC_INTENSITY;
+	g_SSAOConstant.Radius = OCC_RADIUS;
+	g_SSAOConstant.Scale = OCC_SCALE;
 	
 	g_SSAOConstant.FrustumCorners[0] = XMFLOAT4(-SCREEN_WIDTH / 2, -SCREEN_HEIGHT / 2, VIEW_FAR_Z, 0.0f);
 	g_SSAOConstant.FrustumCorners[1] = XMFLOAT4(-SCREEN_WIDTH / 2, +SCREEN_HEIGHT / 2, VIEW_FAR_Z, 0.0f);

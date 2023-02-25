@@ -14,6 +14,11 @@ struct PSOUTPUT
 };
 
 Texture2D g_TexMiniMap : register(t2);
+Texture2D g_TexSSAONormalZMap : register(t3);
+Texture2D g_TexSSAORandomMap : register(t4);
+Texture2D g_TexSSAOTexMap : register(t5);
+Texture2D g_TexSSAOBlurMap : register(t6);
+Texture2D g_TexSSAOViewPos : register(t7);
 SamplerState g_SamplerState : register(s0);
 
 PSOUTPUT MiniMapPS(PSINPUT input)
@@ -21,7 +26,7 @@ PSOUTPUT MiniMapPS(PSINPUT input)
     float4 color;
     PSOUTPUT output;
     
-    color = g_TexMiniMap.Sample(g_SamplerState, input.TexCoord);
+    color = g_TexSSAOTexMap.Sample(g_SamplerState, input.TexCoord);
     color *= input.Diffuse;
     
     output.Diffuse = color;
