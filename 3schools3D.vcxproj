@@ -119,6 +119,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <AdditionalIncludeDirectories>.\imgui</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>NotSet</SubSystem>
@@ -134,6 +135,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <AdditionalIncludeDirectories>.\imgui</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>NotSet</SubSystem>
@@ -143,6 +145,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\GP12B\DX11\3schools3D\imgui\imgui.cpp" />
+    <ClCompile Include="..\..\GP12B\DX11\3schools3D\imgui\imgui_demo.cpp" />
+    <ClCompile Include="..\..\GP12B\DX11\3schools3D\imgui\imgui_draw.cpp" />
+    <ClCompile Include="..\..\GP12B\DX11\3schools3D\imgui\imgui_impl_dx11.cpp" />
+    <ClCompile Include="..\..\GP12B\DX11\3schools3D\imgui\imgui_impl_win32.cpp" />
+    <ClCompile Include="..\..\GP12B\DX11\3schools3D\imgui\imgui_tables.cpp" />
+    <ClCompile Include="..\..\GP12B\DX11\3schools3D\imgui\imgui_widgets.cpp" />
     <ClCompile Include="bullet.cpp" />
     <ClCompile Include="camera.cpp" />
     <ClCompile Include="collision.cpp" />
@@ -177,6 +186,14 @@
     <ClCompile Include="tutorial.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\GP12B\DX11\3schools3D\imgui\imconfig.h" />
+    <ClInclude Include="..\..\GP12B\DX11\3schools3D\imgui\imgui.h" />
+    <ClInclude Include="..\..\GP12B\DX11\3schools3D\imgui\imgui_impl_dx11.h" />
+    <ClInclude Include="..\..\GP12B\DX11\3schools3D\imgui\imgui_impl_win32.h" />
+    <ClInclude Include="..\..\GP12B\DX11\3schools3D\imgui\imgui_internal.h" />
+    <ClInclude Include="..\..\GP12B\DX11\3schools3D\imgui\imstb_rectpack.h" />
+    <ClInclude Include="..\..\GP12B\DX11\3schools3D\imgui\imstb_textedit.h" />
+    <ClInclude Include="..\..\GP12B\DX11\3schools3D\imgui\imstb_truetype.h" />
     <ClInclude Include="bullet.h" />
     <ClInclude Include="camera.h" />
     <ClInclude Include="collision.h" />

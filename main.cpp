@@ -20,6 +20,10 @@
 #include "debugproc.h"
 #include "tutorial.h"
 #include <time.h>
+#include <imgui.h>
+#include <imgui_impl_dx11.h>
+#include <imgui_impl_win32.h>
+
 
 //*****************************************************************************
 // マクロ定義
@@ -204,6 +208,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 //=============================================================================
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+	if (ImGui_ImplWin32_WndProcHandler(hWnd, message, wParam, lParam)) { return true; }
+
 	switch(message)
 	{
 	case WM_DESTROY:
@@ -237,6 +244,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 HRESULT Init(HINSTANCE hInstance, HWND hWnd, BOOL bWindow)
 {
 	InitRenderer(hInstance, hWnd, bWindow);
+
+	// imgui初期化
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO();
+	ImFontConfig font_cfg;
+	font_cfg.MergeMode = true;
+	io.Fonts->AddFontDefault();
+	io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\meiryo.ttc", 18.0f, &font_cfg, io.Fonts->GetGlyphRangesJapanese());
+	ImGui_ImplWin32_Init(hWnd);
+	ImGui_ImplDX11_Init(GetDevice(), GetDeviceContext());
+	ImGui::StyleColorsDark();
+
 
 	InitLight();
 
@@ -282,6 +302,11 @@ void Uninit(void)
 	//入力の終了処理
 	UninitInput();
 
+	// imgui終了
+	ImGui_ImplDX11_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
+
 	UninitRenderer();
 }
 
@@ -326,6 +351,10 @@ void Update(void)
 	// フェード処理の更新
 	UpdateFade();
 
+	// imgui更新処理
+	ImGui_ImplDX11_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
 
 }
 
@@ -401,6 +430,11 @@ void Draw(void)
 		SetDepthEnable(true);
 		break;
 	}
+
+	// imgui描画
+	ImGui::Render();
+	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
 
 	// フェード描画
 	DrawFade();
