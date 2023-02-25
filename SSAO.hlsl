@@ -150,6 +150,7 @@ Texture2D g_TexSSAORandomMap  : register(t4);
 Texture2D g_TexSSAOTexMap     : register(t5);
 Texture2D g_TexSSAOBlurMap    : register(t6);
 Texture2D g_TexSSAOViewPos    : register(t7);
+Texture2D g_TexSSAOViewPosBack: register(t8);
 SamplerState g_SamplerState   : register(s0);
 
 float4x4 inverse(float4x4 m)

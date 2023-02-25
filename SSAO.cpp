@@ -37,6 +37,12 @@ static ID3D11RenderTargetView* g_ViewPosMapRTV = NULL;
 static ID3D11DepthStencilView* g_ViewPosMapDSV = NULL;
 static ID3D11ShaderResourceView* g_ViewPosMapSRV = NULL;
 
+static ID3D11Texture2D* g_ViewPosMapBackFace = NULL;
+static ID3D11Texture2D* g_ViewPosMapBackFaceDS = NULL;
+static ID3D11RenderTargetView* g_ViewPosMapBackFaceRTV = NULL;
+static ID3D11DepthStencilView* g_ViewPosMapBackFaceDSV = NULL;
+static ID3D11ShaderResourceView* g_ViewPosMapBackFaceSRV = NULL;
+
 static ID3D11Texture2D* g_SSAORandomTex = NULL;
 static ID3D11ShaderResourceView* g_SSAORandomTexSRV = NULL;
 
@@ -165,6 +171,25 @@ HRESULT InitSSAO()
 		texDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 		GetDevice()->CreateTexture2D(&texDesc, NULL, &g_ViewPosMapDS);
 		GetDevice()->CreateDepthStencilView(g_ViewPosMapDS, NULL, &g_ViewPosMapDSV);
+	}
+
+	// 前カリングView空間座標マップ
+	{
+		texDesc.Width = SCREEN_WIDTH;
+		texDesc.Height = SCREEN_HEIGHT;
+		texDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+		texDesc.Usage = D3D11_USAGE_DEFAULT;
+		texDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+		texDesc.CPUAccessFlags = 0;
+		texDesc.MiscFlags = 0;
+		GetDevice()->CreateTexture2D(&texDesc, NULL, &g_ViewPosMapBackFace);
+		GetDevice()->CreateRenderTargetView(g_ViewPosMapBackFace, NULL, &g_ViewPosMapBackFaceRTV);
+		GetDevice()->CreateShaderResourceView(g_ViewPosMapBackFace, NULL, &g_ViewPosMapBackFaceSRV);
+
+		texDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+		texDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+		GetDevice()->CreateTexture2D(&texDesc, NULL, &g_ViewPosMapBackFaceDS);
+		GetDevice()->CreateDepthStencilView(g_ViewPosMapBackFaceDS, NULL, &g_ViewPosMapBackFaceDSV);
 	}
 
 	// SSAOマップの作成
@@ -507,6 +532,66 @@ void UninitSSAO()
 		g_NormalZMapDSV = NULL;
 	}
 
+	if (g_ViewPosMap)
+	{
+		g_ViewPosMap->Release();
+		g_ViewPosMap = NULL;
+	}
+
+	if (g_ViewPosMapDS)
+	{
+		g_ViewPosMapDS->Release();
+		g_ViewPosMapDS = NULL;
+	}
+
+	if (g_ViewPosMapRTV)
+	{
+		g_ViewPosMapRTV->Release();
+		g_ViewPosMapRTV = NULL;
+	}
+
+	if (g_ViewPosMapSRV)
+	{
+		g_ViewPosMapSRV->Release();
+		g_ViewPosMapSRV = NULL;
+	}
+
+	if (g_ViewPosMapDSV)
+	{
+		g_ViewPosMapDSV->Release();
+		g_ViewPosMapDSV = NULL;
+	}
+
+	if (g_ViewPosMapBackFace)
+	{
+		g_ViewPosMapBackFace->Release();
+		g_ViewPosMapBackFace = NULL;
+	}
+
+	if (g_ViewPosMapBackFaceDS)
+	{
+		g_ViewPosMapBackFaceDS->Release();
+		g_ViewPosMapBackFaceDS = NULL;
+	}
+
+	if (g_ViewPosMapBackFaceRTV)
+	{
+		g_ViewPosMapBackFaceRTV->Release();
+		g_ViewPosMapBackFaceRTV = NULL;
+	}
+
+	if (g_ViewPosMapBackFaceSRV)
+	{
+		g_ViewPosMapBackFaceSRV->Release();
+		g_ViewPosMapBackFaceSRV = NULL;
+	}
+
+	if (g_ViewPosMapBackFaceDSV)
+	{
+		g_ViewPosMapBackFaceDSV->Release();
+		g_ViewPosMapBackFaceDSV = NULL;
+	}
+
 	if (g_SSAORandomTex)
 	{
 		g_SSAORandomTex->Release();
@@ -738,6 +823,23 @@ void DrawViewPosMap()
 	// シェーダーにテクスチャを設定する
 	GetDeviceContext()->PSSetShaderResources(7, 1, &g_ViewPosMapSRV);
 
+	// 前面カリング描画
+	SetCullingMode(CULL_MODE_FRONT);
+	GetDeviceContext()->PSSetShaderResources(8, 1, null);
+	GetDeviceContext()->OMSetRenderTargets(1, &g_ViewPosMapBackFaceRTV, g_ViewPosMapBackFaceDSV);
+	GetDeviceContext()->ClearRenderTargetView(g_ViewPosMapBackFaceRTV, Clear);
+	GetDeviceContext()->ClearDepthStencilView(g_ViewPosMapBackFaceDSV, D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+	DrawStage();
+	DrawTreeSSAO(INSTViewPosMap);
+
+	// レンダーターゲットを設定
+	GetDeviceContext()->OMSetRenderTargets(1, nullRTV, nullptr);
+
+	// シェーダーにテクスチャを設定する
+	GetDeviceContext()->PSSetShaderResources(8, 1, &g_ViewPosMapBackFaceSRV);
+
+	SetCullingMode(CULL_MODE_BACK);
 	SetShaderMode(SHADER_MODE_DEFAULT);
 }
 
