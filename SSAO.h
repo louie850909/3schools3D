@@ -16,10 +16,10 @@
 //*****************************************************************************
 // マクロ定義
 //*****************************************************************************
-#define OCC_RADIUS 0.028f
-#define OCC_SCALE 0.447f
-#define OCC_INTENSITY 0.291f
-#define OCC_BIAS 0.201f
+#define OCC_RADIUS 1.0f
+#define OCC_FADEEND 0.25f
+#define OCC_FADESTART 0.0f
+#define OCC_SURFACEEPSILON 0.13f
 
 enum SSAO_PASS
 {
@@ -39,15 +39,15 @@ struct SSAO_CONSTANT_BUFFER
 	XMMATRIX ViewToTex;
 	XMFLOAT4 FrustumCorners[4];
 	
-	float Scale;
-	float Bias;
-	float Intensity;
+	float fadeEND;
+	float fadeStart;
+	float surfaceEpsilon;
 	float Radius;
 };
 
 struct SSAO_OFFSET_VECTORS
 {
-	XMFLOAT4 OffsetVectors[14];
+	XMFLOAT4 OffsetVectors[26];
 };
 
 //*****************************************************************************

@@ -101,9 +101,9 @@ struct SSAOCB
     matrix ViewToTex;
     float4 FrustumCorners[4];
 	
-    float Scale;
-    float Bias;
-    float Intensity;
+    float fadeEND;
+    float fadeStart;
+    float surfaceEpsilon;
     float Radius;
 };
 
@@ -114,7 +114,7 @@ cbuffer SSAOBuffer : register(b11)
 
 struct SSAOOV
 {
-    float4 OffsetVectors[14];
+    float4 OffsetVectors[26];
 };
 
 cbuffer SSAOOffsetBuffer : register(b12)
@@ -193,19 +193,6 @@ float4x4 inverse(float4x4 m)
     return ret;
 }
 
-float doAmbientOcclusion(in float2 tcoord, in float2 uv, in float3 p, in float3 cnorm)
-{
-    float g_scale, g_bias, g_intensity;
-    g_scale = SSAO.Scale;
-    g_bias = SSAO.Bias;
-    g_intensity = SSAO.Intensity;
-    
-    float3 diff = g_TexSSAOViewPos.Sample(g_SamplerState, tcoord + uv).xyz - p;
-    const float3 v = normalize(diff);
-    const float d = length(diff) * g_scale;
-    return max(0.0, dot(cnorm, v) - g_bias) * (1.0 / (1.0 + d)) * g_intensity;
-}
-
 Texture2D g_Texture : register(t0);
 PSINPUT NormalZMapVS(VSINPUT input)
 {
@@ -265,36 +252,49 @@ PSINPUT SSAOVS(VSINPUT input)
     return output;
 }
 
-// ÉTÉìÉvÉäÉìÉOêî
-#define SPHERE_COUNT 14
 PSOUTPUT SSAOPS(PSINPUT input)
 {
     PSOUTPUT output;
     
     float g_sample_rad = SSAO.Radius;
     
-    const float2 vec[4] = { float2(1, 0), float2(-1, 0), float2(0, 1), float2(0, -1) };
+    const float2 vec[8] = { float2(1, 0), float2(-1, 0), float2(0, 1), float2(0, -1),
+                            float2(0.5, 0), float2(-0.5, 0), float2(0, 0.5), float2(0, -0.5)};
     float3 p = g_TexSSAOViewPos.Sample(g_SamplerState, input.TexCoord).xyz;
     float3 n = g_TexSSAONormalZMap.Sample(g_SamplerState, input.TexCoord).xyz;
-    float2 rand = g_TexSSAORandomMap.Sample(g_SamplerState, input.TexCoord).xy;
+    float3 rand = g_TexSSAORandomMap.Sample(g_SamplerState, input.TexCoord).xyz;
     rand = rand * 2.0f - 1.0f;
     
     float ao = 0.0f;
-    float rad = g_sample_rad / p.z;
+    float rad = g_sample_rad;
     
-    int iterations = 4;
-    for (int j = 0; j < iterations; ++j)
+    int iterations = 26;
+    for (int i = 0; i<iterations; i++)
     {
-        float2 coord1 = reflect(vec[j], rand) * rad;
-        float2 coord2 = float2(coord1.x * 0.707 - coord1.y * 0.707, coord1.x * 0.707 + coord1.y * 0.707);
+        float3 offset = reflect(OffsetVectors.OffsetVectors[i % 26].xyz, rand);
+        float flip = sign(dot(offset, n));
+        float3 q = p + offset * rad * flip;
+        float4 qProj = mul(float4(q, 1.0f), Projection);
+        float2 coord = (qProj.xy / qProj.w);
+        coord.x = coord.x * 0.5f + 0.5f;
+        coord.y = coord.y * (-0.5f) + 0.5f;
+        float3 r = g_TexSSAOViewPos.Sample(g_SamplerState, coord).xyz;
+        float distZ = r.z - p.z;
         
-        ao += doAmbientOcclusion(input.TexCoord, coord1 * 0.25, p, n);
-        ao += doAmbientOcclusion(input.TexCoord, coord2 * 0.5, p, n);
-        ao += doAmbientOcclusion(input.TexCoord, coord1 * 0.75, p, n);
-        ao += doAmbientOcclusion(input.TexCoord, coord2, p, n);
+        float par = 0.0f;
+        float fadeEnd = SSAO.fadeEND;
+        float fadeStart = SSAO.fadeStart;
+        float surfaceEpsilon = SSAO.surfaceEpsilon;
+        if(distZ > surfaceEpsilon)
+        {
+            float length = fadeEnd - fadeStart;
+            par = saturate((fadeEnd - distZ) / length);
+        }
+        
+        ao += par * max(0.0f, dot(n, normalize(r - p)));
     }
     
-    ao /= (float) iterations * 4.0;
+    ao /= (float) iterations;
     
     float access = 1.0f - ao;
     output.Diffuse.xyz = saturate(pow(access, 4.0f));

@@ -476,9 +476,9 @@ void UpdateSSAO()
 
 	ImGui::Begin("SSAO", nullptr, ImGuiWindowFlags_None);
 	ImGui::SliderFloat("Radius", &g_SSAOConstant.Radius, 0.0f, 1.0f);
-	ImGui::SliderFloat("Bias", &g_SSAOConstant.Bias, 0.0f, 1.0f);
-	ImGui::SliderFloat("Intensity", &g_SSAOConstant.Intensity, 0.0f, 1.0f);
-	ImGui::SliderFloat("Scale", &g_SSAOConstant.Scale, 0.0f, 1.0f);
+	ImGui::SliderFloat("FadeStart", &g_SSAOConstant.fadeStart, 0.0f, 0.5f);
+	ImGui::SliderFloat("FadeEnd", &g_SSAOConstant.fadeEND, 0.0f, 5.0f);
+	ImGui::SliderFloat("SurfaceEpsilon", &g_SSAOConstant.surfaceEpsilon, 0.0f, 1.0f);
 
 	ImGui::End();
 
@@ -1069,10 +1069,10 @@ void SetSSAOConstant(void)
 
 	g_SSAOConstant.ViewToTex = XMMatrixTranspose(Tex);
 
-	g_SSAOConstant.Bias = OCC_BIAS;
-	g_SSAOConstant.Intensity = OCC_INTENSITY;
+	g_SSAOConstant.fadeEND = OCC_FADEEND;
+	g_SSAOConstant.fadeStart = OCC_FADESTART;
 	g_SSAOConstant.Radius = OCC_RADIUS;
-	g_SSAOConstant.Scale = OCC_SCALE;
+	g_SSAOConstant.surfaceEpsilon = OCC_SURFACEEPSILON;
 	
 	g_SSAOConstant.FrustumCorners[0] = XMFLOAT4(-SCREEN_WIDTH / 2, -SCREEN_HEIGHT / 2, VIEW_FAR_Z, 0.0f);
 	g_SSAOConstant.FrustumCorners[1] = XMFLOAT4(-SCREEN_WIDTH / 2, +SCREEN_HEIGHT / 2, VIEW_FAR_Z, 0.0f);
@@ -1087,7 +1087,7 @@ void SetSSAOConstant(void)
 //=============================================================================
 void SetSSAOOffsetVectors(void)
 {
-	XMFLOAT4 mOffsets[14];
+	XMFLOAT4 mOffsets[26];
 	// 8 立方体の頂点
 	mOffsets[0] = XMFLOAT4(+1.0f, +1.0f, +1.0f, 0.0f);
 	mOffsets[1] = XMFLOAT4(-1.0f, -1.0f, -1.0f, 0.0f);
@@ -1111,7 +1111,23 @@ void SetSSAOOffsetVectors(void)
 	mOffsets[12] = XMFLOAT4(0.0f, 0.0f, -1.0f, 0.0f);
 	mOffsets[13] = XMFLOAT4(0.0f, 0.0f, +1.0f, 0.0f);
 
-	for (int i = 0; i < 14; i++)
+	// 12 辺
+	mOffsets[14] = XMFLOAT4(-1.0f, +1.0f, 0.0f, 0.0f);
+	mOffsets[15] = XMFLOAT4(+1.0f, +1.0f, 0.0f, 0.0f);
+	mOffsets[16] = XMFLOAT4(0.0f, +1.0f, -1.0f, 0.0f);
+	mOffsets[17] = XMFLOAT4(0.0f, +1.0f, +1.0f, 0.0f);
+
+	mOffsets[18] = XMFLOAT4(+1.0f, 0.0f, +1.0f, 0.0f);
+	mOffsets[19] = XMFLOAT4(-1.0f, 0.0f, +1.0f, 0.0f);
+	mOffsets[20] = XMFLOAT4(-1.0f, 0.0f, -1.0f, 0.0f);
+	mOffsets[21] = XMFLOAT4(+1.0f, 0.0f, -1.0f, 0.0f);
+
+	mOffsets[22] = XMFLOAT4(-1.0f, -1.0f, 0.0f, 0.0f);
+	mOffsets[23] = XMFLOAT4(+1.0f, -1.0f, 0.0f, 0.0f);
+	mOffsets[24] = XMFLOAT4(0.0f, -1.0f, -1.0f, 0.0f);
+	mOffsets[25] = XMFLOAT4(0.0f, -1.0f, +1.0f, 0.0f);
+
+	for (int i = 0; i < 26; i++)
 	{
 		// 0.25から1.0の範囲にランダムにする
 		float s = 0.25f + (float)(rand() % 512) / 511 * 0.75f;

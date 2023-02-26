@@ -27,7 +27,7 @@ PSOUTPUT MiniMapPS(PSINPUT input)
     float4 color;
     PSOUTPUT output;
     
-    color = g_TexSSAOViewPosBack.Sample(g_SamplerState, input.TexCoord);
+    color = g_TexSSAOTexMap.Sample(g_SamplerState, input.TexCoord);
     color *= input.Diffuse;
     
     output.Diffuse = color;
