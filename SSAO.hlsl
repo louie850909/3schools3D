@@ -101,10 +101,10 @@ struct SSAOCB
     matrix ViewToTex;
     float4 FrustumCorners[4];
 	
-    float OcclusionRadius;
-    float OcclusionFadeStart;
-    float OcclusionFadeEnd;
-    float SurfaceEpsilon;
+    float fadeEND;
+    float fadeStart;
+    float surfaceEpsilon;
+    float Radius;
 };
 
 cbuffer SSAOBuffer : register(b11)
@@ -114,7 +114,7 @@ cbuffer SSAOBuffer : register(b11)
 
 struct SSAOOV
 {
-    float4 OffsetVectors[14];
+    float4 OffsetVectors[26];
 };
 
 cbuffer SSAOOffsetBuffer : register(b12)
@@ -150,6 +150,7 @@ Texture2D g_TexSSAORandomMap  : register(t4);
 Texture2D g_TexSSAOTexMap     : register(t5);
 Texture2D g_TexSSAOBlurMap    : register(t6);
 Texture2D g_TexSSAOViewPos    : register(t7);
+Texture2D g_TexSSAOViewPosBack: register(t8);
 SamplerState g_SamplerState   : register(s0);
 
 float4x4 inverse(float4x4 m)
@@ -190,19 +191,6 @@ float4x4 inverse(float4x4 m)
     ret[3][3] = (n12 * n23 * n31 - n13 * n22 * n31 + n13 * n21 * n32 - n11 * n23 * n32 - n12 * n21 * n33 + n11 * n22 * n33) * idet;
 
     return ret;
-}
-
-float doAmbientOcclusion(in float2 tcoord, in float2 uv, in float3 p, in float3 cnorm)
-{
-    float g_scale, g_bias, g_intensity;
-    g_scale = 1.0f;
-    g_bias = 0.05f;
-    g_intensity = 0.35f;
-    
-    float3 diff = g_TexSSAOViewPos.Sample(g_SamplerState, tcoord + uv).xyz - p;
-    const float3 v = normalize(diff);
-    const float d = length(diff) * g_scale;
-    return max(0.0, dot(cnorm, v) - g_bias) * (1.0 / (1.0 + d)) * g_intensity;
 }
 
 Texture2D g_Texture : register(t0);
@@ -264,36 +252,49 @@ PSINPUT SSAOVS(VSINPUT input)
     return output;
 }
 
-// サンプリング数
-#define SPHERE_COUNT 14
 PSOUTPUT SSAOPS(PSINPUT input)
 {
     PSOUTPUT output;
     
-    float g_sample_rad = 0.3f;
+    float g_sample_rad = SSAO.Radius;
     
-    const float2 vec[4] = { float2(1, 0), float2(-1, 0), float2(0, 1), float2(0, -1) };
+    const float2 vec[8] = { float2(1, 0), float2(-1, 0), float2(0, 1), float2(0, -1),
+                            float2(0.5, 0), float2(-0.5, 0), float2(0, 0.5), float2(0, -0.5)};
     float3 p = g_TexSSAOViewPos.Sample(g_SamplerState, input.TexCoord).xyz;
     float3 n = g_TexSSAONormalZMap.Sample(g_SamplerState, input.TexCoord).xyz;
-    float2 rand = g_TexSSAORandomMap.Sample(g_SamplerState, input.TexCoord).xy;
+    float3 rand = g_TexSSAORandomMap.Sample(g_SamplerState, input.TexCoord).xyz;
     rand = rand * 2.0f - 1.0f;
     
     float ao = 0.0f;
-    float rad = g_sample_rad / p.z;
+    float rad = g_sample_rad;
     
-    int iterations = 4;
-    for (int j = 0; j < iterations; ++j)
+    int iterations = 26;
+    for (int i = 0; i<iterations; i++)
     {
-        float2 coord1 = reflect(vec[j], rand) * rad;
-        float2 coord2 = float2(coord1.x * 0.707 - coord1.y * 0.707, coord1.x * 0.707 + coord1.y * 0.707);
+        float3 offset = reflect(OffsetVectors.OffsetVectors[i % 26].xyz, rand);
+        float flip = sign(dot(offset, n));
+        float3 q = p + offset * rad * flip;
+        float4 qProj = mul(float4(q, 1.0f), Projection);
+        float2 coord = (qProj.xy / qProj.w);
+        coord.x = coord.x * 0.5f + 0.5f;
+        coord.y = coord.y * (-0.5f) + 0.5f;
+        float3 r = g_TexSSAOViewPos.Sample(g_SamplerState, coord).xyz;
+        float distZ = r.z - p.z;
         
-        ao += doAmbientOcclusion(input.TexCoord, coord1 * 0.25, p, n);
-        ao += doAmbientOcclusion(input.TexCoord, coord2 * 0.5, p, n);
-        ao += doAmbientOcclusion(input.TexCoord, coord1 * 0.75, p, n);
-        ao += doAmbientOcclusion(input.TexCoord, coord2, p, n);
+        float par = 0.0f;
+        float fadeEnd = SSAO.fadeEND;
+        float fadeStart = SSAO.fadeStart;
+        float surfaceEpsilon = SSAO.surfaceEpsilon;
+        if(distZ > surfaceEpsilon)
+        {
+            float length = fadeEnd - fadeStart;
+            par = saturate((fadeEnd - distZ) / length);
+        }
+        
+        ao += par * max(0.0f, dot(n, normalize(r - p)));
     }
     
-    ao /= (float) iterations * 4.0;
+    ao /= (float) iterations;
     
     float access = 1.0f - ao;
     output.Diffuse.xyz = saturate(pow(access, 4.0f));
@@ -306,50 +307,60 @@ PSOUTPUT SSAOPS(PSINPUT input)
 #define BLUROFFSET_COUNT 24
 PSOUTPUT SSAOBlurPS(PSINPUT input)
 {
-    // ブラーフィルター時のテクセルのオフセット配列
-    static float2 BlurOffset24[BLUROFFSET_COUNT] =
-    {
-        float2(1, 1)
-      , float2(-1, 1)
-      , float2(-1, -1)
-      , float2(1, -1)
-      , float2(3, 1)
-      , float2(3, 3)
-      , float2(1, 3)
-      , float2(-1, 3)
-      , float2(-3, 3)
-      , float2(-3, 1)
-      , float2(-3, -1)
-      , float2(-3, -3)
-      , float2(-1, -3)
-      , float2(1, -3)
-      , float2(3, -3)
-      , float2(3, -1)
-        , float2(2, 1)
-        , float2(1, 2)
-        , float2(2, -1)
-        , float2(1,-2)
-        , float2(-2, 1)
-        , float2(-1,2)
-        , float2(-2,-1)
-        , float2(-1,-2)
-    };
+    float BlurWeights[11] = { 0.05f, 0.05f, 0.1f, 0.1f, 0.1f, 0.2f, 0.1f, 0.1f, 0.1f, 0.05f, 0.05f };
+    float BlurRadius = 5.0f;
+    float BlurCount = 4.0f;
     
+    float ScreenHight = 540.0f;
     float ScreenWidth = 960.0f;
-    float ScreenHeight = 540.0f;
+    float TexelSizeX = 1.0f / ScreenWidth;
+    float TexelSizeY = 1.0f / ScreenHight;
     
-    float Out = 0;
+    float4 color = BlurWeights[BlurRadius] * g_TexSSAOTexMap.Sample(g_SamplerState, input.TexCoord);
+    float totalWeight = BlurWeights[BlurRadius];
     
-    for (int i = 0; i < BLUROFFSET_COUNT; i++)
+    float3 centerNormal = g_TexSSAONormalZMap.Sample(g_SamplerState, input.TexCoord).xyz;
+    float centerDepth = g_TexSSAOViewPos.Sample(g_SamplerState, input.TexCoord).z;
+    // Blur Horizon
+    for (int i = -BlurRadius; i <= BlurRadius; i++)
     {
-        float2 offset = BlurOffset24[i] / float2(ScreenWidth, ScreenHeight);
-        Out += g_TexSSAOTexMap.Sample(g_SamplerState, input.TexCoord + offset).r;
+        if (i == 0)
+            continue;
+        
+        float2 offset = float2(i * TexelSizeX, 0.0f);
+        float3 neighborNormal = g_TexSSAONormalZMap.Sample(g_SamplerState, input.TexCoord + offset).xyz;
+        float neighborDepth = g_TexSSAOViewPos.Sample(g_SamplerState, input.TexCoord + offset).z;
+        
+    //if(dot(neighborNormal, centerNormal) >= 0.8f && abs(neighborDepth - centerDepth) <= 0.2f)
+    {
+            float weight = BlurWeights[i + BlurRadius];
+            color += weight * g_TexSSAOTexMap.Sample(g_SamplerState, input.TexCoord + offset);
+            
+            totalWeight += weight;
+        }
     }
     
-    Out /= (float) BLUROFFSET_COUNT;
+    // Blur Vertical
+    for (int j = -BlurRadius; j <= BlurRadius; j++)
+    {
+        if (j == 0)
+            continue;
+        
+        float2 offset = float2(0.0f, j * TexelSizeY);
+        float3 neighborNormal = g_TexSSAONormalZMap.Sample(g_SamplerState, input.TexCoord + offset).xyz;
+        float neighborDepth = g_TexSSAOViewPos.Sample(g_SamplerState, input.TexCoord + offset).z;
+        
+    //if(dot(neighborNormal, centerNormal) >= 0.8f && abs(neighborDepth - centerDepth) <= 0.2f)
+    {
+            float weight = BlurWeights[j + BlurRadius];
+            color += weight * g_TexSSAOTexMap.Sample(g_SamplerState, input.TexCoord + offset);
+            
+            totalWeight += weight;
+        }
+    }
     
     PSOUTPUT output;
-    output.Diffuse = Out;
+    output.Diffuse = color / totalWeight;
     return output;
 }
 

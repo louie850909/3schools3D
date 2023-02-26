@@ -220,7 +220,7 @@ PSOUTPUT PixelShaderPolygon(PSINPUT input )
             if (SSAO.x == 1.0f)
             {
                 float2 SampleCoord = float2(input.Position.x / 960.0f, input.Position.y / 540.0f);
-                AO = g_TexSSAO.Sample(g_SamplerState, SampleCoord);
+                AO.xyz = g_TexSSAO.Sample(g_SamplerState, SampleCoord).xyz;
             }
 
 			if (Light.Flags[i].y == 1)
@@ -232,7 +232,6 @@ PSOUTPUT PixelShaderPolygon(PSINPUT input )
 
 					light = 0.5 - 0.5 * light;
                     tempColor = color * Material.Diffuse * light * Light.Diffuse[i];
-                    tempColor.rgb *= AO.rgb;
                 }
 				else if (Light.Flags[i].x == 2)
 				{
@@ -251,6 +250,7 @@ PSOUTPUT PixelShaderPolygon(PSINPUT input )
 					tempColor = float4(0.0f, 0.0f, 0.0f, 0.0f);
 				}
 
+				tempColor *= AO;
 				outColor += tempColor;
 			}
 		}

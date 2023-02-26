@@ -10,6 +10,7 @@
 #include "grass.h"
 #include "camera.h"
 #include <time.h>
+#include "imgui.h"
 
 //*****************************************************************************
 // マクロ定義
@@ -35,6 +36,12 @@ static ID3D11Texture2D* g_ViewPosMapDS = NULL;
 static ID3D11RenderTargetView* g_ViewPosMapRTV = NULL;
 static ID3D11DepthStencilView* g_ViewPosMapDSV = NULL;
 static ID3D11ShaderResourceView* g_ViewPosMapSRV = NULL;
+
+static ID3D11Texture2D* g_ViewPosMapBackFace = NULL;
+static ID3D11Texture2D* g_ViewPosMapBackFaceDS = NULL;
+static ID3D11RenderTargetView* g_ViewPosMapBackFaceRTV = NULL;
+static ID3D11DepthStencilView* g_ViewPosMapBackFaceDSV = NULL;
+static ID3D11ShaderResourceView* g_ViewPosMapBackFaceSRV = NULL;
 
 static ID3D11Texture2D* g_SSAORandomTex = NULL;
 static ID3D11ShaderResourceView* g_SSAORandomTexSRV = NULL;
@@ -79,7 +86,6 @@ static SSAO_OFFSET_VECTORS g_SSAOOffset;
 
 void SetSSAOConstant(void);
 void SetSSAOOffsetVectors(void);
-static XMMATRIX InverseTranspose(CXMMATRIX M);
 
 HRESULT InitSSAO()
 {
@@ -165,6 +171,25 @@ HRESULT InitSSAO()
 		texDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 		GetDevice()->CreateTexture2D(&texDesc, NULL, &g_ViewPosMapDS);
 		GetDevice()->CreateDepthStencilView(g_ViewPosMapDS, NULL, &g_ViewPosMapDSV);
+	}
+
+	// 前カリングView空間座標マップ
+	{
+		texDesc.Width = SCREEN_WIDTH;
+		texDesc.Height = SCREEN_HEIGHT;
+		texDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+		texDesc.Usage = D3D11_USAGE_DEFAULT;
+		texDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+		texDesc.CPUAccessFlags = 0;
+		texDesc.MiscFlags = 0;
+		GetDevice()->CreateTexture2D(&texDesc, NULL, &g_ViewPosMapBackFace);
+		GetDevice()->CreateRenderTargetView(g_ViewPosMapBackFace, NULL, &g_ViewPosMapBackFaceRTV);
+		GetDevice()->CreateShaderResourceView(g_ViewPosMapBackFace, NULL, &g_ViewPosMapBackFaceSRV);
+
+		texDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+		texDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+		GetDevice()->CreateTexture2D(&texDesc, NULL, &g_ViewPosMapBackFaceDS);
+		GetDevice()->CreateDepthStencilView(g_ViewPosMapBackFaceDS, NULL, &g_ViewPosMapBackFaceDSV);
 	}
 
 	// SSAOマップの作成
@@ -445,6 +470,20 @@ HRESULT InitSSAO()
 //=============================================================================
 void UpdateSSAO()
 {
+#ifdef _DEBUG
+	ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
+	ImGui::SetNextWindowSize(ImVec2(300, 300), ImGuiCond_FirstUseEver);
+
+	ImGui::Begin("SSAO", nullptr, ImGuiWindowFlags_None);
+	ImGui::SliderFloat("Radius", &g_SSAOConstant.Radius, 0.0f, 1.0f);
+	ImGui::SliderFloat("FadeStart", &g_SSAOConstant.fadeStart, 0.0f, 0.5f);
+	ImGui::SliderFloat("FadeEnd", &g_SSAOConstant.fadeEND, 0.0f, 5.0f);
+	ImGui::SliderFloat("SurfaceEpsilon", &g_SSAOConstant.surfaceEpsilon, 0.0f, 1.0f);
+
+	ImGui::End();
+
+	GetDeviceContext()->UpdateSubresource(g_SSAOConstantBuffer, 0, NULL, &g_SSAOConstant, 0, 0);
+#endif // DEBUG
 }
 
 //=============================================================================
@@ -491,6 +530,66 @@ void UninitSSAO()
 	{
 		g_NormalZMapDSV->Release();
 		g_NormalZMapDSV = NULL;
+	}
+
+	if (g_ViewPosMap)
+	{
+		g_ViewPosMap->Release();
+		g_ViewPosMap = NULL;
+	}
+
+	if (g_ViewPosMapDS)
+	{
+		g_ViewPosMapDS->Release();
+		g_ViewPosMapDS = NULL;
+	}
+
+	if (g_ViewPosMapRTV)
+	{
+		g_ViewPosMapRTV->Release();
+		g_ViewPosMapRTV = NULL;
+	}
+
+	if (g_ViewPosMapSRV)
+	{
+		g_ViewPosMapSRV->Release();
+		g_ViewPosMapSRV = NULL;
+	}
+
+	if (g_ViewPosMapDSV)
+	{
+		g_ViewPosMapDSV->Release();
+		g_ViewPosMapDSV = NULL;
+	}
+
+	if (g_ViewPosMapBackFace)
+	{
+		g_ViewPosMapBackFace->Release();
+		g_ViewPosMapBackFace = NULL;
+	}
+
+	if (g_ViewPosMapBackFaceDS)
+	{
+		g_ViewPosMapBackFaceDS->Release();
+		g_ViewPosMapBackFaceDS = NULL;
+	}
+
+	if (g_ViewPosMapBackFaceRTV)
+	{
+		g_ViewPosMapBackFaceRTV->Release();
+		g_ViewPosMapBackFaceRTV = NULL;
+	}
+
+	if (g_ViewPosMapBackFaceSRV)
+	{
+		g_ViewPosMapBackFaceSRV->Release();
+		g_ViewPosMapBackFaceSRV = NULL;
+	}
+
+	if (g_ViewPosMapBackFaceDSV)
+	{
+		g_ViewPosMapBackFaceDSV->Release();
+		g_ViewPosMapBackFaceDSV = NULL;
 	}
 
 	if (g_SSAORandomTex)
@@ -724,6 +823,23 @@ void DrawViewPosMap()
 	// シェーダーにテクスチャを設定する
 	GetDeviceContext()->PSSetShaderResources(7, 1, &g_ViewPosMapSRV);
 
+	// 前面カリング描画
+	SetCullingMode(CULL_MODE_FRONT);
+	GetDeviceContext()->PSSetShaderResources(8, 1, null);
+	GetDeviceContext()->OMSetRenderTargets(1, &g_ViewPosMapBackFaceRTV, g_ViewPosMapBackFaceDSV);
+	GetDeviceContext()->ClearRenderTargetView(g_ViewPosMapBackFaceRTV, Clear);
+	GetDeviceContext()->ClearDepthStencilView(g_ViewPosMapBackFaceDSV, D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+	DrawStage();
+	DrawTreeSSAO(INSTViewPosMap);
+
+	// レンダーターゲットを設定
+	GetDeviceContext()->OMSetRenderTargets(1, nullRTV, nullptr);
+
+	// シェーダーにテクスチャを設定する
+	GetDeviceContext()->PSSetShaderResources(8, 1, &g_ViewPosMapBackFaceSRV);
+
+	SetCullingMode(CULL_MODE_BACK);
 	SetShaderMode(SHADER_MODE_DEFAULT);
 }
 
@@ -953,10 +1069,10 @@ void SetSSAOConstant(void)
 
 	g_SSAOConstant.ViewToTex = XMMatrixTranspose(Tex);
 
-	g_SSAOConstant.OcclusionFadeEnd = OCC_FADE_END;
-	g_SSAOConstant.OcclusionFadeStart = OCC_FADE_START;
-	g_SSAOConstant.OcclusionRadius = OCC_RADIUS;
-	g_SSAOConstant.SurfaceEpsilon = SURFACE_EPSILON;
+	g_SSAOConstant.fadeEND = OCC_FADEEND;
+	g_SSAOConstant.fadeStart = OCC_FADESTART;
+	g_SSAOConstant.Radius = OCC_RADIUS;
+	g_SSAOConstant.surfaceEpsilon = OCC_SURFACEEPSILON;
 	
 	g_SSAOConstant.FrustumCorners[0] = XMFLOAT4(-SCREEN_WIDTH / 2, -SCREEN_HEIGHT / 2, VIEW_FAR_Z, 0.0f);
 	g_SSAOConstant.FrustumCorners[1] = XMFLOAT4(-SCREEN_WIDTH / 2, +SCREEN_HEIGHT / 2, VIEW_FAR_Z, 0.0f);
@@ -971,7 +1087,7 @@ void SetSSAOConstant(void)
 //=============================================================================
 void SetSSAOOffsetVectors(void)
 {
-	XMFLOAT4 mOffsets[14];
+	XMFLOAT4 mOffsets[26];
 	// 8 立方体の頂点
 	mOffsets[0] = XMFLOAT4(+1.0f, +1.0f, +1.0f, 0.0f);
 	mOffsets[1] = XMFLOAT4(-1.0f, -1.0f, -1.0f, 0.0f);
@@ -995,7 +1111,23 @@ void SetSSAOOffsetVectors(void)
 	mOffsets[12] = XMFLOAT4(0.0f, 0.0f, -1.0f, 0.0f);
 	mOffsets[13] = XMFLOAT4(0.0f, 0.0f, +1.0f, 0.0f);
 
-	for (int i = 0; i < 14; i++)
+	// 12 辺
+	mOffsets[14] = XMFLOAT4(-1.0f, +1.0f, 0.0f, 0.0f);
+	mOffsets[15] = XMFLOAT4(+1.0f, +1.0f, 0.0f, 0.0f);
+	mOffsets[16] = XMFLOAT4(0.0f, +1.0f, -1.0f, 0.0f);
+	mOffsets[17] = XMFLOAT4(0.0f, +1.0f, +1.0f, 0.0f);
+
+	mOffsets[18] = XMFLOAT4(+1.0f, 0.0f, +1.0f, 0.0f);
+	mOffsets[19] = XMFLOAT4(-1.0f, 0.0f, +1.0f, 0.0f);
+	mOffsets[20] = XMFLOAT4(-1.0f, 0.0f, -1.0f, 0.0f);
+	mOffsets[21] = XMFLOAT4(+1.0f, 0.0f, -1.0f, 0.0f);
+
+	mOffsets[22] = XMFLOAT4(-1.0f, -1.0f, 0.0f, 0.0f);
+	mOffsets[23] = XMFLOAT4(+1.0f, -1.0f, 0.0f, 0.0f);
+	mOffsets[24] = XMFLOAT4(0.0f, -1.0f, -1.0f, 0.0f);
+	mOffsets[25] = XMFLOAT4(0.0f, -1.0f, +1.0f, 0.0f);
+
+	for (int i = 0; i < 26; i++)
 	{
 		// 0.25から1.0の範囲にランダムにする
 		float s = 0.25f + (float)(rand() % 512) / 511 * 0.75f;
