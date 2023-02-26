@@ -307,50 +307,60 @@ PSOUTPUT SSAOPS(PSINPUT input)
 #define BLUROFFSET_COUNT 24
 PSOUTPUT SSAOBlurPS(PSINPUT input)
 {
-    // ブラーフィルター時のテクセルのオフセット配列
-    static float2 BlurOffset24[BLUROFFSET_COUNT] =
-    {
-        float2(1, 1)
-      , float2(-1, 1)
-      , float2(-1, -1)
-      , float2(1, -1)
-      , float2(3, 1)
-      , float2(3, 3)
-      , float2(1, 3)
-      , float2(-1, 3)
-      , float2(-3, 3)
-      , float2(-3, 1)
-      , float2(-3, -1)
-      , float2(-3, -3)
-      , float2(-1, -3)
-      , float2(1, -3)
-      , float2(3, -3)
-      , float2(3, -1)
-        , float2(2, 1)
-        , float2(1, 2)
-        , float2(2, -1)
-        , float2(1,-2)
-        , float2(-2, 1)
-        , float2(-1,2)
-        , float2(-2,-1)
-        , float2(-1,-2)
-    };
+    float BlurWeights[11] = { 0.05f, 0.05f, 0.1f, 0.1f, 0.1f, 0.2f, 0.1f, 0.1f, 0.1f, 0.05f, 0.05f };
+    float BlurRadius = 5.0f;
+    float BlurCount = 4.0f;
     
+    float ScreenHight = 540.0f;
     float ScreenWidth = 960.0f;
-    float ScreenHeight = 540.0f;
+    float TexelSizeX = 1.0f / ScreenWidth;
+    float TexelSizeY = 1.0f / ScreenHight;
     
-    float Out = 0;
+    float4 color = BlurWeights[BlurRadius] * g_TexSSAOTexMap.Sample(g_SamplerState, input.TexCoord);
+    float totalWeight = BlurWeights[BlurRadius];
     
-    for (int i = 0; i < BLUROFFSET_COUNT; i++)
+    float3 centerNormal = g_TexSSAONormalZMap.Sample(g_SamplerState, input.TexCoord).xyz;
+    float centerDepth = g_TexSSAOViewPos.Sample(g_SamplerState, input.TexCoord).z;
+    // Blur Horizon
+    for (int i = -BlurRadius; i <= BlurRadius; i++)
     {
-        float2 offset = BlurOffset24[i] / float2(ScreenWidth, ScreenHeight);
-        Out += g_TexSSAOTexMap.Sample(g_SamplerState, input.TexCoord + offset).r;
+        if (i == 0)
+            continue;
+        
+        float2 offset = float2(i * TexelSizeX, 0.0f);
+        float3 neighborNormal = g_TexSSAONormalZMap.Sample(g_SamplerState, input.TexCoord + offset).xyz;
+        float neighborDepth = g_TexSSAOViewPos.Sample(g_SamplerState, input.TexCoord + offset).z;
+        
+    //if(dot(neighborNormal, centerNormal) >= 0.8f && abs(neighborDepth - centerDepth) <= 0.2f)
+    {
+            float weight = BlurWeights[i + BlurRadius];
+            color += weight * g_TexSSAOTexMap.Sample(g_SamplerState, input.TexCoord + offset);
+            
+            totalWeight += weight;
+        }
     }
     
-    Out /= (float) BLUROFFSET_COUNT;
+    // Blur Vertical
+    for (int j = -BlurRadius; j <= BlurRadius; j++)
+    {
+        if (j == 0)
+            continue;
+        
+        float2 offset = float2(0.0f, j * TexelSizeY);
+        float3 neighborNormal = g_TexSSAONormalZMap.Sample(g_SamplerState, input.TexCoord + offset).xyz;
+        float neighborDepth = g_TexSSAOViewPos.Sample(g_SamplerState, input.TexCoord + offset).z;
+        
+    //if(dot(neighborNormal, centerNormal) >= 0.8f && abs(neighborDepth - centerDepth) <= 0.2f)
+    {
+            float weight = BlurWeights[j + BlurRadius];
+            color += weight * g_TexSSAOTexMap.Sample(g_SamplerState, input.TexCoord + offset);
+            
+            totalWeight += weight;
+        }
+    }
     
     PSOUTPUT output;
-    output.Diffuse = Out;
+    output.Diffuse = color / totalWeight;
     return output;
 }
 
