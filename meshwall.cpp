@@ -21,20 +21,21 @@
 //*****************************************************************************
 // 構造体定義
 //*****************************************************************************
-typedef struct
+class MESH_WALL
 {
-	ID3D11Buffer	*vertexBuffer;	// 頂点バッファ
-	ID3D11Buffer	*indexBuffer;	// インデックスバッファ
+	public:
+		ID3D11Buffer	*vertexBuffer;	// 頂点バッファ
+		ID3D11Buffer	*indexBuffer;	// インデックスバッファ
 
-	XMFLOAT3		pos;						// ポリゴン表示位置の中心座標
-	XMFLOAT3		rot;						// ポリゴンの回転角
-	MATERIAL		material;					// マテリアル
-	int				nNumBlockX, nNumBlockY;		// ブロック数
-	int				nNumVertex;					// 総頂点数	
-	int				nNumVertexIndex;			// 総インデックス数
-	int				nNumPolygon;				// 総ポリゴン数
-	float			fBlockSizeX, fBlockSizeY;	// ブロックサイズ
-} MESH_WALL;
+		XMFLOAT3		pos;						// ポリゴン表示位置の中心座標
+		XMFLOAT3		rot;						// ポリゴンの回転角
+		MATERIAL		material;					// マテリアル
+		int				nNumBlockX, nNumBlockY;		// ブロック数
+		int				nNumVertex;					// 総頂点数	
+		int				nNumVertexIndex;			// 総インデックス数
+		int				nNumPolygon;				// 総ポリゴン数
+		float			fBlockSizeX, fBlockSizeY;	// ブロックサイズ
+};
 
 //*****************************************************************************
 // グローバル変数

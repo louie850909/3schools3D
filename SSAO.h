@@ -34,20 +34,22 @@ enum SSAO_PASS
 //*****************************************************************************
 // 構造体定義
 //*****************************************************************************
-struct SSAO_CONSTANT_BUFFER
+class SSAO_CONSTANT_BUFFER
 {
-	XMMATRIX ViewToTex;
-	XMFLOAT4 FrustumCorners[4];
+	public:
+		XMMATRIX ViewToTex;
+		XMFLOAT4 FrustumCorners[4];
 	
-	float fadeEND;
-	float fadeStart;
-	float surfaceEpsilon;
-	float Radius;
+		float fadeEND;
+		float fadeStart;
+		float surfaceEpsilon;
+		float Radius;
 };
 
-struct SSAO_OFFSET_VECTORS
+class SSAO_OFFSET_VECTORS
 {
-	XMFLOAT4 OffsetVectors[26];
+	public:
+		XMFLOAT4 OffsetVectors[26];
 };
 
 //*****************************************************************************

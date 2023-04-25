@@ -20,18 +20,19 @@
 #define	VIEW_NEAR_Z		(10.0f)											// ビュー平面のNearZ値
 #define	VIEW_FAR_Z		(10000.0f)										// ビュー平面のFarZ値
 
-struct CAMERA
+class CAMERA
 {
-	XMFLOAT4X4			mtxView;		// ビューマトリックス
-	XMFLOAT4X4			mtxInvView;		// ビューマトリックス
-	XMFLOAT4X4			mtxProjection;	// プロジェクションマトリックス
+	public:
+		XMFLOAT4X4			mtxView;		// ビューマトリックス
+		XMFLOAT4X4			mtxInvView;		// ビューマトリックス
+		XMFLOAT4X4			mtxProjection;	// プロジェクションマトリックス
 	
-	XMFLOAT3			pos;			// カメラの視点(位置)
-	XMFLOAT3			at;				// カメラの注視点
-	XMFLOAT3			up;				// カメラの上方向ベクトル
-	XMFLOAT3			rot;			// カメラの回転
+		XMFLOAT3			pos;			// カメラの視点(位置)
+		XMFLOAT3			at;				// カメラの注視点
+		XMFLOAT3			up;				// カメラの上方向ベクトル
+		XMFLOAT3			rot;			// カメラの回転
 	
-	float				len;			// カメラの視点と注視点の距離
+		float				len;			// カメラの視点と注視点の距離
 
 };
 

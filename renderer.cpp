@@ -18,59 +18,65 @@
 //*********************************************************
 
 // マテリアル用定数バッファ構造体
-struct MATERIAL_CBUFFER
+class MATERIAL_CBUFFER
 {
-	XMFLOAT4	Ambient;
-	XMFLOAT4	Diffuse;
-	XMFLOAT4	Specular;
-	XMFLOAT4	Emission;
-	float		Shininess;
-	int			noTexSampling;
-	float		Dummy[2];				// 16byte境界用
+	public:
+		XMFLOAT4	Ambient;
+		XMFLOAT4	Diffuse;
+		XMFLOAT4	Specular;
+		XMFLOAT4	Emission;
+		float		Shininess;
+		int			noTexSampling;
+		float		Dummy[2];				// 16byte境界用
 };
 
 // ライト用フラグ構造体
-struct LIGHTFLAGS
+class LIGHTFLAGS
 {
-	int			Type;		//ライトタイプ（enum LIGHT_TYPE）
-	int         OnOff;		//ライトのオンorオフスイッチ
-	int			Dummy[2];
+	public:
+		int			Type;		//ライトタイプ（enum LIGHT_TYPE）
+		int         OnOff;		//ライトのオンorオフスイッチ
+		int			Dummy[2];
 };
 
 // ライト用定数バッファ構造体
-struct LIGHT_CBUFFER
+class LIGHT_CBUFFER
 {
-	XMFLOAT4	Direction[LIGHT_MAX];	// ライトの方向
-	XMFLOAT4	Position[LIGHT_MAX];	// ライトの位置
-	XMFLOAT4	Diffuse[LIGHT_MAX];		// 拡散光の色
-	XMFLOAT4	Ambient[LIGHT_MAX];		// 環境光の色
-	XMFLOAT4	Attenuation[LIGHT_MAX];	// 減衰率
-	LIGHTFLAGS	Flags[LIGHT_MAX];		// ライト種別
-	int			Enable;					// ライティング有効・無効フラグ
-	int			Dummy[3];				// 16byte境界用
+	public:
+		XMFLOAT4	Direction[LIGHT_MAX];	// ライトの方向
+		XMFLOAT4	Position[LIGHT_MAX];	// ライトの位置
+		XMFLOAT4	Diffuse[LIGHT_MAX];		// 拡散光の色
+		XMFLOAT4	Ambient[LIGHT_MAX];		// 環境光の色
+		XMFLOAT4	Attenuation[LIGHT_MAX];	// 減衰率
+		LIGHTFLAGS	Flags[LIGHT_MAX];		// ライト種別
+		int			Enable;					// ライティング有効・無効フラグ
+		int			Dummy[3];				// 16byte境界用
 };
 
 // フォグ用定数バッファ構造体
-struct FOG_CBUFFER
+class FOG_CBUFFER
 {
-	XMFLOAT4	Fog;					// フォグ量
-	XMFLOAT4	FogColor;				// フォグの色
-	int			Enable;					// フォグ有効・無効フラグ
-	float		Dummy[3];				// 16byte境界用
+	public:
+		XMFLOAT4	Fog;					// フォグ量
+		XMFLOAT4	FogColor;				// フォグの色
+		int			Enable;					// フォグ有効・無効フラグ
+		float		Dummy[3];				// 16byte境界用
 };
 
 // 縁取り用バッファ
-struct FUCHI
+class FUCHI
 {
-	int			fuchi;
-	int			fill[3];
+	public:
+		int			fuchi;
+		int			fill[3];
 };
 
 // ライト視点の定数バッファ構造体
-struct LIGHT_MATRIX_CBUFFER
+class LIGHT_MATRIX_CBUFFER
 {
-	XMMATRIX	LightView[LIGHT_MAX];
-	XMMATRIX	LightProjection[LIGHT_MAX];
+	public:
+		XMMATRIX	LightView[LIGHT_MAX];
+		XMMATRIX	LightProjection[LIGHT_MAX];
 };
 
 

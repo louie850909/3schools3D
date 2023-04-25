@@ -20,30 +20,33 @@
 
 #define MODEL_MAX_MATERIAL		(16)		// １モデルのMaxマテリアル数
 
-struct DX11_MODEL_MATERIAL
+class DX11_MODEL_MATERIAL
 {
-	MATERIAL					Material;
-	ID3D11ShaderResourceView	*Texture;
+	public:
+		MATERIAL					Material;
+		ID3D11ShaderResourceView	*Texture;
 };
 
 // 描画サブセット構造体
-struct DX11_SUBSET
+class DX11_SUBSET
 {
-	unsigned short	StartIndex;
-	unsigned short	IndexNum;
-	DX11_MODEL_MATERIAL	Material;
+	public:
+		unsigned short	StartIndex;
+		unsigned short	IndexNum;
+		DX11_MODEL_MATERIAL	Material;
 };
 
-struct DX11_MODEL
+class DX11_MODEL
 {
-	ID3D11Buffer*	VertexBuffer;
-	ID3D11Buffer*	IndexBuffer;
+	public:
+		ID3D11Buffer*	VertexBuffer;
+		ID3D11Buffer*	IndexBuffer;
 
-	VERTEX_3D*		VertexArray;
-	unsigned short* IndexArray;
+		VERTEX_3D*		VertexArray;
+		unsigned short* IndexArray;
 
-	DX11_SUBSET		*SubsetArray;
-	unsigned short	SubsetNum;
+		DX11_SUBSET		*SubsetArray;
+		unsigned short	SubsetNum;
 };
 
 

@@ -30,20 +30,21 @@
 //*****************************************************************************
 // 構造体定義
 //*****************************************************************************
-typedef struct
+class PARTICLE
 {
-	XMFLOAT3		pos;			// 位置
-	XMFLOAT3		rot;			// 回転
-	XMFLOAT3		scale;			// スケール
-	XMFLOAT3		move;			// 移動量
-	MATERIAL		material;		// マテリアル
-	float			fSizeX;			// 幅
-	float			fSizeY;			// 高さ
-	int				nIdxShadow;		// 影ID
-	int				nLife;			// 寿命
-	bool			bUse;			// 使用しているかどうか
+	public:
+		XMFLOAT3		pos;			// 位置
+		XMFLOAT3		rot;			// 回転
+		XMFLOAT3		scale;			// スケール
+		XMFLOAT3		move;			// 移動量
+		MATERIAL		material;		// マテリアル
+		float			fSizeX;			// 幅
+		float			fSizeY;			// 高さ
+		int				nIdxShadow;		// 影ID
+		int				nLife;			// 寿命
+		bool			bUse;			// 使用しているかどうか
 
-} PARTICLE;
+};
 
 //*****************************************************************************
 // プロトタイプ宣言

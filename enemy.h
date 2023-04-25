@@ -18,28 +18,29 @@
 //*****************************************************************************
 // 構造体定義
 //*****************************************************************************
-struct ENEMY
+class ENEMY
 {
-	XMFLOAT4X4			mtxWorld;			// ワールドマトリックス
-	XMFLOAT3			pos;				// モデルの位置
-	XMFLOAT3			rot;				// モデルの向き(回転)
-	XMFLOAT3			scl;				// モデルの大きさ(スケール)
+	public:
+		XMFLOAT4X4			mtxWorld;			// ワールドマトリックス
+		XMFLOAT3			pos;				// モデルの位置
+		XMFLOAT3			rot;				// モデルの向き(回転)
+		XMFLOAT3			scl;				// モデルの大きさ(スケール)
 
-	bool				use;
-	bool				load;
-	DX11_MODEL			model;				// モデル情報
-	XMFLOAT4			diffuse[MODEL_MAX_MATERIAL];	// モデルの色
+		bool				use;
+		bool				load;
+		DX11_MODEL			model;				// モデル情報
+		XMFLOAT4			diffuse[MODEL_MAX_MATERIAL];	// モデルの色
 
-	float				spd;				// 移動スピード
-	float				size;				// 当たり判定の大きさ
-	int					shadowIdx;			// 影のインデックス番号
+		float				spd;				// 移動スピード
+		float				size;				// 当たり判定の大きさ
+		int					shadowIdx;			// 影のインデックス番号
 
-	INTERPOLATION_DATA* tbl_adr;			// アニメデータのテーブル先頭アドレス
-	int					anitbl_no;			// アニメデータのテーブル番号
-	int					tbl_size;			// 登録したテーブルのレコード総数
-	float				move_time;			// 実行時間
+		INTERPOLATION_DATA* tbl_adr;			// アニメデータのテーブル先頭アドレス
+		int					anitbl_no;			// アニメデータのテーブル番号
+		int					tbl_size;			// 登録したテーブルのレコード総数
+		float				move_time;			// 実行時間
 
-	ENEMY* parent;			// 自分が親ならNULL、自分が子供なら親のenemyアドレス
+		ENEMY* parent;			// 自分が親ならNULL、自分が子供なら親のenemyアドレス
 };
 
 //*****************************************************************************

@@ -61,55 +61,63 @@ enum SHADER_MODE
 //*********************************************************
 
 // 頂点構造体
-struct VERTEX_3D
+class VERTEX_3D
 {
-    XMFLOAT3	Position;
-    XMFLOAT3	Normal;
-    XMFLOAT4	Diffuse;
-    XMFLOAT2	TexCoord;
+	public:
+		XMFLOAT3	Position;
+		XMFLOAT3	Normal;
+		XMFLOAT4	Diffuse;
+		XMFLOAT2	TexCoord;
 };
 
 // マテリアル構造体
-struct MATERIAL
+class MATERIAL
 {
-	XMFLOAT4	Ambient;
-	XMFLOAT4	Diffuse;
-	XMFLOAT4	Specular;
-	XMFLOAT4	Emission;
-	float		Shininess;
-	int			noTexSampling;
+	public:
+		XMFLOAT4	Ambient;
+		XMFLOAT4	Diffuse;
+		XMFLOAT4	Specular;
+		XMFLOAT4	Emission;
+		float		Shininess;
+		int			noTexSampling;
 };
 
 // ライト構造体
-struct LIGHT {
-	XMFLOAT3	Direction;	// ライトの方向
-	XMFLOAT3	Position;	// ライトの位置
-	XMFLOAT4	Diffuse;	// 拡散光の色
-	XMFLOAT4	Ambient;	// 環境光の色
-	float		Attenuation;// 減衰率
-	int			Type;		// ライト種別・有効フラグ
-	int			Enable;		// ライト種別・有効フラグ
+class LIGHT
+{
+	public:
+		XMFLOAT3	Direction;	// ライトの方向
+		XMFLOAT3	Position;	// ライトの位置
+		XMFLOAT4	Diffuse;	// 拡散光の色
+		XMFLOAT4	Ambient;	// 環境光の色
+		float		Attenuation;// 減衰率
+		int			Type;		// ライト種別・有効フラグ
+		int			Enable;		// ライト種別・有効フラグ
 };
 
 // フォグ構造体
-struct FOG {
-	float		FogStart;	// フォグの開始距離
-	float		FogEnd;		// フォグの最大距離
-	XMFLOAT4	FogColor;	// フォグの色
+class FOG
+{
+	public:
+		float		FogStart;	// フォグの開始距離
+		float		FogEnd;		// フォグの最大距離
+		XMFLOAT4	FogColor;	// フォグの色
 };
 
-struct LIGHT_MATRIX
+class LIGHT_MATRIX
 {
-	XMMATRIX	LightView;
-	XMMATRIX	LightProjection;
+	public:
+		XMMATRIX	LightView;
+		XMMATRIX	LightProjection;
 };
 
 // インスタンス構造体
-struct INSTANCE
+class INSTANCE
 {
-	XMFLOAT4	pos;
-	XMFLOAT4	scl;
-	XMFLOAT4	rot;
+	public:
+		XMFLOAT4	pos;
+		XMFLOAT4	scl;
+		XMFLOAT4	rot;
 };
 
 
